@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAVX legacy baseline harness</title>
+
+<!-- Legacy stylesheets, served from NAVX_LEGACY_ROOT. Order matches the demo pages. -->
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/bootstrap.min.css">
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/all.css">
+<link rel="stylesheet" href="/legacy/Files/css/navigation.css">
+
+<style>
+  /* Determinism, not decoration. Nothing here may touch .navigation styling. */
+  html { overflow: hidden; }            /* no scrollbars => no width jitter between runs */
+  body {
+    margin: 0;
+    background: #ffffff;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  /* Fixed-height filler so page height never depends on the variant. */
+  #filler { height: 1400px; background: #ffffff; }
+  #mount:empty::after {
+    content: "no fixture mounted";
+    display: block; padding: 24px; font: 13px ui-monospace, monospace; color: #a00;
+  }
+</style>
+</head>
+<body>
+
+<div id="mount"></div>
+<div id="filler"></div>
+
+<script src="/legacy/Files/js/navigation.js"></script>
+<script>
+/**
+ * Mounts one extracted fixture and initialises the legacy plugin against it.
+ *
+ * Query params:
+ *   id=<variant id>          required
+ *   skin=<skin file name>    optional, e.g. "dark" -> navigation-skin-dark.css
+ *   dir=ltr|rtl              optional, default ltr
+ *
+ * Signals for the test runner, set on <html>:
+ *   data-navx-ready="1"      fixture mounted, fonts settled, init attempted
+ *   data-navx-init-error     present iff legacy init threw (audit defect #3)
+ */
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const skin = params.get('skin');
+  const dir = params.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+  const root = document.documentElement;
+
+  root.dir = dir;
+  root.lang = dir === 'rtl' ? 'ar' : 'en';
+
+  const fail = (msg) => {
+    root.setAttribute('data-navx-error', msg);
+    root.setAttribute('data-navx-ready', '1');
+  };
+
+  if (!id) return fail('missing id param');
+
+  if (skin) {
+    await new Promise((resolve) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `/legacy/Files/css/skins/navigation-skin-${skin}.css`;
+      link.onload = link.onerror = resolve;
+      document.head.appendChild(link);
+    });
+  }
+
+  let manifest, html;
+  try {
+    [manifest, html] = await Promise.all([
+      fetch('/fixtures/manifest.json').then((r) => r.json()),
+      fetch(`/fixtures/${id}.html`).then((r) => {
+        if (!r.ok) throw new Error(`fixture ${id} → ${r.status}`);
+        return r.text();
+      }),
+    ]);
+  } catch (err) {
+    return fail(String(err.message || err));
+  }
+
+  const entry = manifest.variants.find((v) => v.id === id) || {};
+  document.getElementById('mount').innerHTML = html;
+
+  const nav = document.querySelector('.navigation');
+  if (!nav) return fail('fixture contained no .navigation root');
+
+  // Images must be decoded before we screenshot, or the first run differs from the rest.
+  await Promise.all([...document.images].map((img) =>
+    img.complete ? Promise.resolve() : new Promise((r) => { img.onload = img.onerror = r; })
+  ));
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+  // The legacy plugin throws on variants missing a toggler or close button.
+  // Record that rather than letting it abort the capture — it is evidence for Stage 3.
+  try {
+    // eslint-disable-next-line no-new, no-undef
+    new Navigation(nav, entry.options || {});
+  } catch (err) {
+    root.setAttribute('data-navx-init-error', String(err && err.message || err));
+  }
+
+  // Two frames: one for the plugin's own DOM writes, one for style resolution.
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  root.setAttribute('data-navx-ready', '1');
+})();
+</script>
+</body>
+</html>

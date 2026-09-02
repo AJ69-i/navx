@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Generated from the DTCG source by build.mjs
+packages/tokens/src/generated.ts
+
+# ── Legacy source is NOT redistributable and never enters this repo ───────────
+legacy/
+tools/baseline/tests/_fixtures/
+tools/baseline/tests/__baselines__/
+tools/baseline/reference/
+
+test-results/
+playwright-report/
+.env
+.DS_Store

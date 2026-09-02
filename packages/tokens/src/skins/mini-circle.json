@@ -1,0 +1,12 @@
+{
+  "$description": "Legacy: navigation-skin-mini-circle.css (24 declarations). A 5px dot below the active bar link.",
+  "link": {
+    "decoration": {
+      "background": { "$type": "color", "$value": "{accent.default}" },
+      "inline-size": { "$type": "dimension", "$value": "{size.3}" },
+      "block-size": { "$type": "dimension", "$value": "{size.3}" },
+      "inset-block": { "$type": "dimension", "$value": "70%" },
+      "radius": { "$type": "dimension", "$value": "{radius.full}" }
+    }
+  }
+}

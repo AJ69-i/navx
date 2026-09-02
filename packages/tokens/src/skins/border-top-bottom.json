@@ -1,0 +1,11 @@
+{
+  "$description": "Legacy: navigation-skin-border-top-bottom.css (11 declarations). Accent rules above and below.",
+  "link": {
+    "accent-border": {
+      "block-start-width": { "$type": "dimension", "$value": "3px" },
+      "block-end-width": { "$type": "dimension", "$value": "3px" },
+      "color-active": { "$type": "color", "$value": "{accent.default}" }
+    },
+    "padding-block-bar": { "$type": "dimension", "$value": "7px" }
+  }
+}

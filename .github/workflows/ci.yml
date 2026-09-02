@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Angular 22 requires ^22.22.3 || ^24.15.0 || >=26.0.0 — narrower than this
+  # repo's own >=20.11. Pinning to a version that satisfies both keeps the
+  # Angular package buildable in the same job matrix from Stage 4 onward.
+  NODE_VERSION: '22.22.3'
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      # The two checks that catch "installs fine, breaks in the consumer's
+      # bundler" — wrong export condition order, missing CJS types, a subpath
+      # the README documents but the exports map hides.
+      # Scoped to packages/* — tools/* is private and is never published, so
+      # checking it for publish-readiness only produces noise that can never
+      # be acted on.
+      - name: Package contract (publint + attw)
+        run: pnpm run package
+
+      # Blocking from the first commit. A budget introduced later is a budget
+      # that gets negotiated away.
+      - name: Bundle budgets
+        run: pnpm exec size-limit

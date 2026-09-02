@@ -1,0 +1,18 @@
+packages:
+  - 'packages/*'
+  - 'tools/*'
+
+# One resolution per shared dep across every workspace. Adapters must all compile
+# against the same TypeScript, or the .d.ts they emit drifts between packages and
+# consumers get subtly incompatible types depending on which one they installed.
+#
+# EXCEPTION: packages/angular is deliberately NOT on this catalog. Angular 22's
+# @angular/compiler-cli pins `typescript: >=6.0 <6.1`, so it cannot compile
+# against the current stable 7.x. It carries its own TypeScript 6.0.x. See
+# packages/angular/README.md — this is a known, contained divergence, not drift.
+catalog:
+  typescript: 7.0.2
+  '@types/node': 22.10.2
+  vitest: 2.1.8
+  tsup: 8.3.5
+  '@playwright/test': 1.56.0

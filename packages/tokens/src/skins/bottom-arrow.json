@@ -1,0 +1,13 @@
+{
+  "$description": "Legacy: navigation-skin-bottom-arrow.css (20 declarations). Legacy drew the triangle with transparent border tricks; clip-path is the same shape with one declaration and mirrors correctly in RTL.",
+  "link": {
+    "decoration": {
+      "background": { "$type": "color", "$value": "{accent.default}" },
+      "inline-size": { "$type": "dimension", "$value": "{size.7}" },
+      "block-size": { "$type": "dimension", "$value": "{size.6}" },
+      "inset-block": { "$type": "dimension", "$value": "100%" },
+      "translate": { "$type": "dimension", "$value": "-50% -100%" },
+      "clip": { "$type": "other", "$value": "polygon(50% 0%, 0% 100%, 100% 100%)" }
+    }
+  }
+}

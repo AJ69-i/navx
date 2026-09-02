@@ -1,0 +1,162 @@
+{
+  "$description": "Tier 1 — primitives. Never redefined by a theme or a skin. Not part of the public theming API; semantic tokens are.",
+  "color": {
+    "$type": "color",
+    "gray": {
+      "0": { "$value": "#ffffff" },
+      "25": {
+        "$value": "#fcfdfd",
+        "$extensions": { "navx.legacy": "lighten($gray-01, 1.5%) — submenu surface" }
+      },
+      "50": {
+        "$value": "#fbfcfc",
+        "$extensions": { "navx.legacy": "lighten($navigation-input-background-color, 1%)" }
+      },
+      "75": { "$value": "#f8f9fa", "$extensions": { "navx.legacy": "$gray-01" } },
+      "100": {
+        "$value": "#f5f6f8",
+        "$extensions": { "navx.legacy": "lighten($gray-02, 4%) — dropdown item active" }
+      },
+      "200": { "$value": "#e9ecef", "$extensions": { "navx.legacy": "$gray-02 — borders" } },
+      "300": { "$value": "#dee2e6", "$extensions": { "navx.legacy": "$gray-03 — input border" } },
+      "400": {
+        "$value": "#a2a9b1",
+        "$extensions": { "navx.legacy": "lighten($font-color, 30%) — search icon" }
+      },
+      "450": { "$value": "#869099" },
+      "500": { "$value": "#868e96", "$extensions": { "navx.legacy": "$gray-04" } },
+      "550": { "$value": "#78838e", "$extensions": { "navx.legacy": "dark-skin text" } },
+      "600": {
+        "$value": "#575f68",
+        "$extensions": { "navx.legacy": "lighten($font-color, 1%) — placeholder" }
+      },
+      "650": {
+        "$value": "#555d65",
+        "$extensions": {
+          "navx.legacy": "lighten($gray-05, 5%) — $font-color, the main text colour"
+        }
+      },
+      "700": { "$value": "#495057", "$extensions": { "navx.legacy": "$gray-05" } },
+      "800": { "$value": "#333333" },
+      "850": { "$value": "#2f2f2f" },
+      "900": { "$value": "#222222" },
+      "950": { "$value": "#151515" }
+    },
+    "brand": {
+      "400": { "$value": "#887ef2", "$extensions": { "navx.legacy": "colored-skin border" } },
+      "500": { "$value": "#7367f0", "$extensions": { "navx.legacy": "$main-color" } },
+      "600": {
+        "$value": "#6254ee",
+        "$extensions": { "navx.legacy": "darken($main-color, 4%) — button hover" }
+      }
+    },
+    "alpha": {
+      "black-05": { "$value": "rgba(0, 0, 0, 0.05)" },
+      "black-07": { "$value": "rgba(0, 0, 0, 0.07)" },
+      "black-70": { "$value": "rgba(0, 0, 0, 0.7)" },
+      "white-01": { "$value": "rgba(255, 255, 255, 0.01)" },
+      "white-05": { "$value": "rgba(255, 255, 255, 0.05)" },
+      "white-20": { "$value": "rgba(255, 255, 255, 0.2)" }
+    },
+    "transparent": { "$value": "transparent" }
+  },
+
+  "size": {
+    "$type": "dimension",
+    "0": { "$value": "0" },
+    "1": { "$value": "2px" },
+    "2": { "$value": "4px" },
+    "3": { "$value": "5px" },
+    "4": { "$value": "6px" },
+    "5": { "$value": "8px" },
+    "6": { "$value": "10px" },
+    "7": { "$value": "12px" },
+    "8": { "$value": "13px" },
+    "9": { "$value": "16px" },
+    "10": { "$value": "19px" },
+    "11": { "$value": "20px" },
+    "12": { "$value": "25.6px" },
+    "13": { "$value": "30px" },
+    "14": { "$value": "32px" },
+    "15": { "$value": "48px" },
+    "16": { "$value": "60px" },
+    "17": { "$value": "64px" },
+    "18": { "$value": "128px" },
+    "19": { "$value": "180px" },
+    "20": { "$value": "320px" }
+  },
+
+  "font": {
+    "size": {
+      "$type": "dimension",
+      "xs": { "$value": "11px" },
+      "sm": { "$value": "13px" },
+      "md": { "$value": "14px" },
+      "lg": { "$value": "16px" },
+      "xl": { "$value": "22px" },
+      "icon": { "$value": "21px" },
+      "icon-lg": { "$value": "25.6px" }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular": { "$value": 400 },
+      "bold": { "$value": 700 }
+    },
+    "family": {
+      "$type": "fontFamily",
+      "inherit": { "$value": "inherit" },
+      "arabic": {
+        "$value": "'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif",
+        "$description": "Arabic needs its own stack; Latin fallbacks render Arabic with wrong metrics."
+      }
+    },
+    "line-height": {
+      "$type": "number",
+      "tight": { "$value": 1.4 },
+      "arabic": {
+        "$value": 1.75,
+        "$description": "Arabic script needs more leading than Latin at the same size. This is a token, not a stylesheet fork."
+      }
+    }
+  },
+
+  "radius": {
+    "$type": "dimension",
+    "none": { "$value": "0" },
+    "sm": { "$value": "4px" },
+    "pill": { "$value": "20px" },
+    "lg": { "$value": "30px" },
+    "full": { "$value": "50%" }
+  },
+
+  "duration": {
+    "$type": "duration",
+    "fast": { "$value": "150ms" },
+    "base": { "$value": "300ms" },
+    "slow": { "$value": "800ms" }
+  },
+
+  "easing": {
+    "$type": "cubicBezier",
+    "standard": { "$value": [0.2, 0, 0, 1] },
+    "decelerate": { "$value": [0, 0, 0, 1] }
+  },
+
+  "layer": {
+    "$type": "number",
+    "$description": "Replaces the legacy 19998–20001 magic numbers with a named, documented scale.",
+    "nav": { "$value": 100 },
+    "dropdown": { "$value": 200 },
+    "overlay": { "$value": 300 },
+    "panel": { "$value": 400 }
+  },
+
+  "breakpoint": {
+    "$type": "dimension",
+    "bar": {
+      "$value": "992px",
+      "$description": "Panel → bar switch. Applied as a container query in Stage 2, not a media query: a nav in a sidebar should not go horizontal because the viewport is wide."
+    },
+    "panel-wide": { "$value": "500px" }
+  }
+}

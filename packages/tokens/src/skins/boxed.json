@@ -1,0 +1,12 @@
+{
+  "$description": "Legacy: navigation-skin-boxed.css (23 declarations). A square accent block behind the active bar link.",
+  "link": {
+    "color-hover": { "$type": "color", "$value": "{text.on-accent}" },
+    "decoration": {
+      "background": { "$type": "color", "$value": "{accent.default}" },
+      "inline-size": { "$type": "dimension", "$value": "100%" },
+      "block-size": { "$type": "dimension", "$value": "50%" },
+      "radius": { "$type": "dimension", "$value": "{radius.none}" }
+    }
+  }
+}

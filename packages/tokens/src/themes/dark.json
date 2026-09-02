@@ -1,0 +1,24 @@
+{
+  "$description": "Dark theme. Tier 2 only — 10 declarations replacing all 52 of the legacy dark skin, of which 39 were colours. Applied under prefers-color-scheme and [data-navx-theme=\"dark\"].",
+  "surface": {
+    "$type": "color",
+    "default": { "$value": "{color.gray.950}" },
+    "raised": { "$value": "{color.gray.900}" },
+    "sunken": { "$value": "{color.gray.950}" },
+    "subtle": { "$value": "{color.gray.900}" },
+    "active": { "$value": "{color.gray.950}" },
+    "inverse": { "$value": "{color.gray.0}" }
+  },
+  "border": {
+    "$type": "color",
+    "default": { "$value": "{color.gray.800}" },
+    "strong": { "$value": "{color.gray.800}" }
+  },
+  "text": {
+    "$type": "color",
+    "default": { "$value": "{color.gray.550}" },
+    "muted": { "$value": "{color.gray.450}" },
+    "placeholder": { "$value": "{color.gray.550}" },
+    "on-inverse": { "$value": "{color.gray.650}" }
+  }
+}

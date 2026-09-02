@@ -1,0 +1,9 @@
+{
+  "$description": "Legacy: navigation-skin-gradient.css (3 declarations, all vendor-prefixed copies of one gradient).",
+  "nav": {
+    "background": {
+      "$type": "color",
+      "$value": "linear-gradient(to bottom, #ffffff 0%, #e5e5e5 100%)"
+    }
+  }
+}

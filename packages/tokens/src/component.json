@@ -1,0 +1,155 @@
+{
+  "$description": "Tier 3 — component. Fine-grained overrides. Every colour here resolves through tier 2; none touches tier 1 directly.",
+
+  "nav": {
+    "background": { "$type": "color", "$value": "{surface.default}" },
+    "min-block-size": { "$type": "dimension", "$value": "{size.16}" },
+    "font-family": { "$type": "fontFamily", "$value": "{font.family.inherit}" },
+    "z-index": { "$type": "number", "$value": "{layer.nav}" }
+  },
+
+  "link": {
+    "color": { "$type": "color", "$value": "{text.default}" },
+    "color-hover": { "$type": "color", "$value": "{text.accent}" },
+    "background-hover": { "$type": "color", "$value": "{color.transparent}" },
+    "border-color": { "$type": "color", "$value": "{border.default}" },
+    "font-size": { "$type": "dimension", "$value": "{font.size.md}" },
+    "letter-spacing": { "$type": "dimension", "$value": "0.3px" },
+    "padding-block": {
+      "$type": "dimension",
+      "$value": "{size.8}",
+      "$description": "Panel mode. The container query swaps this for the bar value; the legacy $x/$x-landscape pair collapses to one token."
+    },
+    "padding-block-bar": { "$type": "dimension", "$value": "{size.6}" },
+    "padding-inline": { "$type": "dimension", "$value": "{size.9}" },
+
+    "accent-border": {
+      "$description": "Zero-width transparent block borders the bar-mode link always declares, so the three BORDER skins are token overlays rather than stylesheets that re-write padding.",
+      "block-start-width": { "$type": "dimension", "$value": "0" },
+      "block-end-width": { "$type": "dimension", "$value": "0" },
+      "color-active": { "$type": "color", "$value": "{color.transparent}" }
+    },
+
+    "decoration": {
+      "$description": "One pseudo-element affordance the base stylesheet always renders, so the four SHAPE skins (boxed, rounded-boxed, mini-circle, bottom-arrow) become token overlays instead of separate stylesheets. Transparent and zero-sized by default, so it costs nothing when unused.",
+      "background": { "$type": "color", "$value": "{color.transparent}" },
+      "inline-size": { "$type": "dimension", "$value": "0" },
+      "block-size": { "$type": "dimension", "$value": "0" },
+      "inset-block": { "$type": "dimension", "$value": "50%" },
+      "inset-inline": { "$type": "dimension", "$value": "50%" },
+      "translate": { "$type": "dimension", "$value": "-50% -50%" },
+      "radius": { "$type": "dimension", "$value": "{radius.none}" },
+      "clip": { "$type": "other", "$value": "none" }
+    }
+  },
+
+  "panel": {
+    "$description": "The off-canvas panel.",
+    "background": { "$type": "color", "$value": "{surface.default}" },
+    "inline-size": { "$type": "dimension", "$value": "{size.20}" },
+    "inline-size-narrow": { "$type": "dimension", "$value": "100%" },
+    "padding": { "$type": "dimension", "$value": "{size.9}" },
+    "z-index": { "$type": "number", "$value": "{layer.panel}" },
+    "transition-duration": { "$type": "duration", "$value": "{motion.duration.panel}" }
+  },
+
+  "overlay": {
+    "background": { "$type": "color", "$value": "{surface.overlay}" },
+    "z-index": { "$type": "number", "$value": "{layer.overlay}" }
+  },
+
+  "dropdown": {
+    "background": { "$type": "color", "$value": "{surface.raised}" },
+    "inline-size": { "$type": "dimension", "$value": "{size.19}" },
+    "shadow": { "$type": "shadow", "$value": "{shadow.dropdown}" },
+    "z-index": { "$type": "number", "$value": "{layer.dropdown}" },
+    "indent": {
+      "$type": "dimension",
+      "$value": "{size.9}",
+      "$description": "Per-level indent. Multiplied by depth via calc(), replacing the legacy 5-rung padding-left ladder."
+    },
+    "link": {
+      "color": { "$type": "color", "$value": "{text.default}" },
+      "color-hover": { "$type": "color", "$value": "{accent.default}" },
+      "background-hover": { "$type": "color", "$value": "{surface.active}" },
+      "font-size": { "$type": "dimension", "$value": "{font.size.sm}" },
+      "padding-block": { "$type": "dimension", "$value": "{size.9}" },
+      "padding-inline": { "$type": "dimension", "$value": "{size.10}" }
+    }
+  },
+
+  "chevron": {
+    "$description": "Direction lives in a token, not a stylesheet. The RTL block flips this one value.",
+    "color": { "$type": "color", "$value": "{text.default}" },
+    "color-hover": { "$type": "color", "$value": "{text.accent}" },
+    "size": { "$type": "dimension", "$value": "{size.4}" },
+    "thickness": { "$type": "dimension", "$value": "1px" },
+    "rotation": { "$type": "other", "$value": "45deg" },
+    "rotation-open": { "$type": "other", "$value": "-135deg" }
+  },
+
+  "button": {
+    "background": { "$type": "color", "$value": "{accent.default}" },
+    "background-hover": { "$type": "color", "$value": "{accent.hover}" },
+    "color": { "$type": "color", "$value": "{text.on-accent}" },
+    "radius": { "$type": "dimension", "$value": "{radius.sm}" },
+    "padding-block": { "$type": "dimension", "$value": "{size.6}" },
+    "padding-inline": { "$type": "dimension", "$value": "{size.7}" }
+  },
+
+  "input": {
+    "background": { "$type": "color", "$value": "{surface.sunken}" },
+    "color": { "$type": "color", "$value": "{text.default}" },
+    "placeholder": { "$type": "color", "$value": "{text.placeholder}" },
+    "border-color": { "$type": "color", "$value": "{border.strong}" },
+    "border-color-hover": { "$type": "color", "$value": "{accent.default}" },
+    "radius": { "$type": "dimension", "$value": "{radius.sm}" },
+    "icon-color": { "$type": "color", "$value": "{text.muted}" }
+  },
+
+  "badge": {
+    "background": { "$type": "color", "$value": "{accent.default}" },
+    "color": { "$type": "color", "$value": "{text.on-accent}" },
+    "font-size": { "$type": "dimension", "$value": "{font.size.xs}" },
+    "min-inline-size": { "$type": "dimension", "$value": "18px" },
+    "block-size": { "$type": "dimension", "$value": "18px" },
+    "radius": { "$type": "dimension", "$value": "{radius.pill}" }
+  },
+
+  "brand": {
+    "color": { "$type": "color", "$value": "{text.default}" },
+    "font-size": { "$type": "dimension", "$value": "{font.size.lg}" },
+    "font-size-bar": { "$type": "dimension", "$value": "{font.size.xl}" },
+    "font-weight": { "$type": "fontWeight", "$value": "{font.weight.bold}" }
+  },
+
+  "logo": {
+    "block-size": { "$type": "dimension", "$value": "40px" },
+    "block-size-bar": { "$type": "dimension", "$value": "{size.15}" }
+  },
+
+  "toggler": {
+    "size": { "$type": "dimension", "$value": "{size.16}" },
+    "color": { "$type": "color", "$value": "{text.default}" }
+  },
+
+  "social": {
+    "icon-size": { "$type": "dimension", "$value": "38px" },
+    "icon-background": { "$type": "color", "$value": "{surface.subtle}" },
+    "icon-radius": { "$type": "dimension", "$value": "{radius.full}" }
+  },
+
+  "tabs": {
+    "background": { "$type": "color", "$value": "{surface.subtle}" },
+    "background-active": { "$type": "color", "$value": "{surface.default}" },
+    "color": { "$type": "color", "$value": "{text.default}" },
+    "shadow": { "$type": "shadow", "$value": "{shadow.tabs}" }
+  },
+
+  "megamenu": {
+    "background": { "$type": "color", "$value": "{surface.raised}" },
+    "border-color": { "$type": "color", "$value": "{border.default}" },
+    "color": { "$type": "color", "$value": "{text.default}" },
+    "padding": { "$type": "dimension", "$value": "{size.9}" }
+  }
+}

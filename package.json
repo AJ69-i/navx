@@ -1,0 +1,35 @@
+{
+  "name": "navx-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NAVX \u2014 the modern, RTL-native, accessible navigation library.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "size": "turbo run build && size-limit",
+    "package": "turbo run build && pnpm --filter \"./packages/*\" exec publint && pnpm --filter \"./packages/*\" run attw",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm package && pnpm size",
+    "baseline:check": "pnpm --filter @navx/baseline-harness run baseline:check",
+    "changeset": "changeset",
+    "release": "turbo run build && changeset publish"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@changesets/cli": "2.27.11",
+    "@size-limit/file": "11.1.6",
+    "publint": "0.2.12",
+    "size-limit": "11.1.6",
+    "turbo": "2.3.3",
+    "typescript": "catalog:"
+  }
+}

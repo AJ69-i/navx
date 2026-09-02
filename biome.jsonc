@@ -1,0 +1,54 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+
+  // Anything gitignored is a build artifact and must not be linted. Without
+  // this, `.turbo/cache/*.json` fails the lint step the moment turbo runs —
+  // which makes `pnpm verify` pass or fail depending on whether a build
+  // happened first.
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+
+  "files": {
+    "ignore": ["dist", "node_modules", ".turbo", "**/generated.ts"]
+  },
+
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": { "noNonNullAssertion": "off" },
+      "suspicious": { "noConsoleLog": "off" }
+    }
+  },
+
+  "javascript": {
+    "formatter": { "quoteStyle": "single", "semicolons": "always" }
+  },
+
+  "overrides": [
+    {
+      // The baseline harness talks to a legacy plugin and to Playwright's
+      // fixture API. These three rules are wrong for that code rather than the
+      // code being wrong for the rules — see tools/baseline/BIOME.md. Product
+      // packages under packages/** keep the full recommended set.
+      "include": ["tools/baseline/**"],
+      "linter": {
+        "rules": {
+          "complexity": { "noForEach": "off" },
+          "correctness": { "noEmptyPattern": "off" },
+          "suspicious": { "noExplicitAny": "off" }
+        }
+      }
+    }
+  ]
+}

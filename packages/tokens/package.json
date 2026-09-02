@@ -1,0 +1,54 @@
+{
+  "name": "@navx/tokens",
+  "version": "0.0.0",
+  "description": "Design tokens for NAVX \u2014 three tiers, dark theme, RTL and ten skins as CSS custom properties.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./tokens.json": "./dist/tokens.json",
+    "./scss": "./dist/_tokens.scss",
+    "./skins/*.css": "./dist/skins/*.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "node build.mjs && tsup && node ../../scripts/emit-types.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "publint": "publint",
+    "attw": "attw --pack . --exclude-entrypoints tokens.css tokens.json scss 'skins/*.css'"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@arethetypeswrong/cli": "0.18.5",
+    "publint": "0.2.12"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trio-telecom/navx.git",
+    "directory": "packages/tokens"
+  },
+  "keywords": ["design-tokens", "css-variables", "dtcg", "navbar", "rtl", "dark-mode"]
+}

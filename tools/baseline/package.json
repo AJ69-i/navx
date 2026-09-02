@@ -1,0 +1,24 @@
+{
+  "name": "@navx/baseline-harness",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Stage 0 \u2014 captures visual baselines from the legacy NAVX source so every later stage has a regression net. Reads legacy from NAVX_LEGACY_ROOT; never vendors it.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "extract": "node tools/extract-legacy.mjs",
+    "serve": "node tools/serve.mjs",
+    "baseline:update": "playwright test --update-snapshots",
+    "baseline:check": "playwright test",
+    "baseline:report": "playwright show-report",
+    "stage0": "npm run extract && npm run baseline:update"
+  },
+  "//devDependencies": "Playwright is pinned exactly, not ranged. Chromium build differences change text rasterisation, which silently invalidates every baseline. Upgrading is a deliberate act that requires re-approving the snapshots.",
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

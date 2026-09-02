@@ -1,0 +1,48 @@
+{
+  "name": "@navx/angular",
+  "version": "0.0.0",
+  "description": "Stage 4 \u2014 Angular adapter. Exempt from the workspace TypeScript catalog; see README.",
+  "license": "MIT",
+  "type": "module",
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup && node ../../scripts/emit-types.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"no tests yet\"",
+    "publint": "publint",
+    "attw": "attw --pack ."
+  },
+  "devDependencies": {
+    "typescript": "6.0.2",
+    "@arethetypeswrong/cli": "0.18.5",
+    "@types/node": "catalog:",
+    "publint": "0.2.12",
+    "tsup": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trio-telecom/navx.git",
+    "directory": "packages/angular"
+  },
+  "//typescript": "NOT catalog: \u2014 Angular's compiler-cli pins >=6.0 <6.1 and cannot use the workspace's 7.x. See README.md."
+}

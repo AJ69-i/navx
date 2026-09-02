@@ -1,0 +1,4 @@
+{
+  "$description": "Legacy: navigation-skin-dark.css (52 declarations, 39 of them colours). Shipped as a THEME rather than a skin — see src/themes/dark.json — so it also responds to prefers-color-scheme. This file exists so `skin=dark` keeps working as an explicit opt-in.",
+  "$extends": "../themes/dark.json"
+}

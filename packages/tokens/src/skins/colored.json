@@ -1,0 +1,17 @@
+{
+  "$description": "Legacy: navigation-skin-colored.css (38 declarations). A full accent block behind active links, in both bar and dropdown.",
+  "link": {
+    "color-hover": { "$type": "color", "$value": "{text.on-accent}" },
+    "decoration": {
+      "background": { "$type": "color", "$value": "{accent.default}" },
+      "inline-size": { "$type": "dimension", "$value": "100%" },
+      "block-size": { "$type": "dimension", "$value": "100%" }
+    }
+  },
+  "dropdown": {
+    "link": {
+      "color-hover": { "$type": "color", "$value": "{text.on-accent}" },
+      "background-hover": { "$type": "color", "$value": "{accent.default}" }
+    }
+  }
+}

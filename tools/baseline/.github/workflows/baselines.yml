@@ -1,0 +1,90 @@
+name: legacy baselines
+
+# The legacy NAVX tree is not redistributable, so it is not in this repo and the
+# baseline suite cannot run on a public runner without it. This workflow checks
+# out the private baseline companion repo and the legacy source, and is a no-op
+# (not a failure) when those secrets are not configured — e.g. on a fork's PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: baselines-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  baselines:
+    runs-on: ubuntu-24.04
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: guard
+        name: Check whether the private sources are configured
+        run: echo "ready=${{ secrets.NAVX_LEGACY_REPO != '' && secrets.NAVX_PRIVATE_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
+      - if: steps.guard.outputs.ready != 'true'
+        run: |
+          echo "::notice title=Baselines skipped::NAVX_LEGACY_REPO / NAVX_PRIVATE_TOKEN not set."
+          echo "Visual baselines run only where the legacy source is available."
+
+      - if: steps.guard.outputs.ready == 'true'
+        name: Check out legacy source (private)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.NAVX_LEGACY_REPO }}
+          token: ${{ secrets.NAVX_PRIVATE_TOKEN }}
+          path: .legacy
+
+      - if: steps.guard.outputs.ready == 'true'
+        name: Check out committed baselines (private)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.NAVX_BASELINE_REPO }}
+          token: ${{ secrets.NAVX_PRIVATE_TOKEN }}
+          path: .baselines
+
+      - if: steps.guard.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+
+      - if: steps.guard.outputs.ready == 'true'
+        run: npm ci
+
+      # Pinned browser build. Version drift silently invalidates every snapshot,
+      # so the Playwright version in package.json is exact and this installs it.
+      - if: steps.guard.outputs.ready == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - if: steps.guard.outputs.ready == 'true'
+        name: Restore baselines into the working tree
+        run: |
+          mkdir -p tests/__baselines__
+          cp -R .baselines/__baselines__/* tests/__baselines__/ 2>/dev/null || true
+
+      - if: steps.guard.outputs.ready == 'true'
+        name: Extract fixtures and compare
+        env:
+          NAVX_LEGACY_ROOT: ${{ github.workspace }}/.legacy
+        run: |
+          npm run extract
+          npx playwright test
+
+      - if: always() && steps.guard.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

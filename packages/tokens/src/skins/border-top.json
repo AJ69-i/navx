@@ -1,0 +1,10 @@
+{
+  "$description": "Legacy: navigation-skin-border-top.css (9 declarations). A 3px accent rule above the active bar link.",
+  "link": {
+    "accent-border": {
+      "block-start-width": { "$type": "dimension", "$value": "3px" },
+      "color-active": { "$type": "color", "$value": "{accent.default}" }
+    },
+    "padding-block-bar": { "$type": "dimension", "$value": "7px" }
+  }
+}

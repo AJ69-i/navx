@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.turbo/
+
+# ── Legacy source is NOT redistributable and never enters this repo ────────────
+# The legacy NAVX tree is read at runtime from $NAVX_LEGACY_ROOT (see .env.example).
+# Extracted fixtures are derivatives of it, so they stay out of git too.
+legacy/
+tests/_fixtures/
+
+# ── Baselines are derived from legacy markup — keep them out of the public repo.
+# Store them in the private baselines remote (see README, "Where the files live").
+tests/__baselines__/
+reference/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+.env
+.DS_Store
