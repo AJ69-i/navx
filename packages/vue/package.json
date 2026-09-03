@@ -1,7 +1,7 @@
 {
   "name": "@navx/vue",
   "version": "0.0.0",
-  "description": "Stage 4 \u2014 Vue adapter.",
+  "description": "Stage 4 — Vue adapter.",
   "license": "MIT",
   "type": "module",
   "sideEffects": ["*.css"],
@@ -25,16 +25,19 @@
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests yet\"",
+    "test": "vitest run",
     "publint": "publint",
     "attw": "attw --pack ."
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@types/node": "catalog:",
+    "jsdom": "^25.0.1",
     "publint": "0.2.12",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue": "^3.5.42"
   },
   "publishConfig": {
     "access": "public",
@@ -44,5 +47,12 @@
     "type": "git",
     "url": "git+https://github.com/trio-telecom/navx.git",
     "directory": "packages/vue"
+  },
+  "dependencies": {
+    "@navx/core": "workspace:*"
+  },
+  "//peerDependencies": "effectScope/onScopeDispose landed in 3.2, and the composable ties its teardown to the scope rather than to onUnmounted so it works outside a component too.",
+  "peerDependencies": {
+    "vue": ">=3.2"
   }
 }

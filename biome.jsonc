@@ -51,6 +51,16 @@
       }
     },
     {
+      // TypeScript allows comments in every tsconfig, but Biome only infers
+      // JSONC for the exact name `tsconfig.json` — so the Angular package's
+      // extra project files parse as strict JSON and fail on their own
+      // explanatory comments. Opt them in by name rather than dropping the
+      // comments, which are the only place the `full` vs `partial` compilation
+      // decision is written down.
+      "include": ["packages/*/tsconfig.*.json"],
+      "json": { "parser": { "allowComments": true } }
+    },
+    {
       // `interpolate-size` is newer than Biome's property list, so it reads as
       // a typo. It is the whole point of the progressive-enhancement block and
       // is guarded by `@supports (interpolate-size: allow-keywords)`, which

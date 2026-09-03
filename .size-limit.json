@@ -28,5 +28,41 @@
     "path": ["packages/tokens/dist/tokens.css", "packages/styles/dist/navx.min.css"],
     "limit": "7 kB",
     "gzip": true
+  },
+  {
+    "name": "@navx/react (adapter only)",
+    "path": "packages/react/dist/index.js",
+    "limit": "800 B",
+    "gzip": true
+  },
+  {
+    "name": "@navx/vue (adapter only)",
+    "path": "packages/vue/dist/index.js",
+    "limit": "900 B",
+    "gzip": true
+  },
+  {
+    "name": "@navx/svelte (adapter only)",
+    "path": "packages/svelte/dist/index.js",
+    "limit": "600 B",
+    "gzip": true
+  },
+  {
+    "name": "@navx/element (adapter only)",
+    "path": "packages/element/dist/index.js",
+    "limit": "1.1 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/angular (adapter only)",
+    "path": "packages/angular/dist/fesm2022/navx-angular.mjs",
+    "limit": "2.5 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/core + @navx/react (what a React app ships)",
+    "path": ["packages/core/dist/index.js", "packages/react/dist/index.js"],
+    "limit": "5.5 kB",
+    "gzip": true
   }
 ]

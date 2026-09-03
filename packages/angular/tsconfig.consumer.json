@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": {
+      // Resolved through dist/package.json's `exports`, so this fixture is
+      // typed against exactly the artifact npm publishes — not our sources.
+      "@navx/angular": ["./dist"]
+    }
+  },
+  "angularCompilerOptions": {
+    // `full`, not `partial`: this is a consumer, and full compilation is what
+    // runs the template type-checker.
+    "compilationMode": "full",
+    "strictTemplates": true,
+    "strictInjectionParameters": true,
+    "strictStandalone": true
+  },
+  "include": ["test/consumer/**/*.ts"]
+}

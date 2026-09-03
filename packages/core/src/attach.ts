@@ -18,25 +18,25 @@ export interface AttachOptions {
    * closes on Escape, because a hover-only menu fails WCAG 1.4.13.
    * Panel mode is always click — there is no hover on a drawer.
    */
-  readonly trigger?: 'click' | 'hover';
+  readonly trigger?: 'click' | 'hover' | undefined;
   /** Grace period before a hovered-away menu closes, in ms. */
-  readonly hoverCloseDelay?: number;
+  readonly hoverCloseDelay?: number | undefined;
   /** Close everything when a pointer goes down, or focus lands, outside the nav. */
-  readonly dismissOnOutside?: boolean;
+  readonly dismissOnOutside?: boolean | undefined;
   /**
    * Treat the open drawer as modal: trap focus inside it, make the rest of the
    * page `inert`, and lock body scroll. Every one of those is reverted exactly,
    * on close and on detach.
    */
-  readonly modal?: boolean;
+  readonly modal?: boolean | undefined;
   /**
    * Names for controls whose markup carries none. Defaults are English; a
    * localised site passes its own rather than shipping an English word inside
    * an Arabic navbar.
    */
-  readonly labelDisclosure?: (linkText: string) => string;
-  readonly labelToggler?: string;
-  readonly labelClose?: string;
+  readonly labelDisclosure?: ((linkText: string) => string) | undefined;
+  readonly labelToggler?: string | undefined;
+  readonly labelClose?: string | undefined;
 }
 
 const DEFAULTS = {
@@ -110,7 +110,18 @@ export function attach(
   machine: NavMachine,
   options: AttachOptions = {},
 ): () => void {
-  const opts = { ...DEFAULTS, ...options };
+  // `{ trigger: undefined }` is a legal way for a caller to say "not set", so
+  // the undefined keys are dropped before the spread — otherwise they would
+  // overwrite the defaults with nothing.
+  const given = Object.fromEntries(
+    Object.entries(options).filter(([, value]) => value !== undefined),
+  ) as AttachOptions;
+  // `-?` strips the optionality and `NonNullable` the explicit `undefined`, so
+  // the rest of the function sees settled values rather than re-checking each
+  // one at every use.
+  const opts = { ...DEFAULTS, ...given } as {
+    [K in keyof AttachOptions]-?: NonNullable<AttachOptions[K]>;
+  };
   const doc = root.ownerDocument;
   const view = doc.defaultView;
   if (!view) throw new Error('attach: element is not in a live document');
@@ -202,8 +213,26 @@ export function attach(
 
   const syncMode = () => machine.send({ type: 'MODE_SET', mode: readMode() });
 
-  const resizeObserver = new win.ResizeObserver(syncMode);
-  resizeObserver.observe(root);
+  /**
+   * A ResizeObserver when the environment has one, a window resize listener
+   * when it does not.
+   *
+   * The observer is strictly better — it fires when the nav's own box changes,
+   * so a nav in a collapsing sidebar switches mode without the viewport moving
+   * at all, which is the whole point of the container query. But requiring it
+   * made `attach()` throw outright in jsdom and in any environment without it,
+   * which is a poor trade for a graceful fallback that costs four lines. Per
+   * the Stage 1 decision: fall back, do not polyfill.
+   */
+  let stopObserving: () => void;
+  if (typeof win.ResizeObserver === 'function') {
+    const observer = new win.ResizeObserver(syncMode);
+    observer.observe(root);
+    stopObserving = () => observer.disconnect();
+  } else {
+    on(win, 'resize', syncMode);
+    stopObserving = () => {}; // the signal already removes the listener
+  }
 
   // ── modal drawer plumbing ─────────────────────────────────────────────────
   let restoreFocusTo: HTMLElement | null = null;
@@ -564,7 +593,7 @@ export function attach(
     detached = true;
     ac.abort();
     clearTimers();
-    resizeObserver.disconnect();
+    stopObserving();
     unsubscribe();
     exitModal();
     restoreAttrs();

@@ -1,6 +1,6 @@
 # @navx/core
 
-The headless navigation core. **4.2 kB gzipped**, no dependencies, no framework,
+The headless navigation core. **4.3 kB gzipped**, no dependencies, no framework,
 and a `detach()` that provably returns the page to exactly what it was.
 
 ```sh

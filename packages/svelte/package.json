@@ -1,7 +1,7 @@
 {
   "name": "@navx/svelte",
   "version": "0.0.0",
-  "description": "Stage 4 \u2014 Svelte adapter.",
+  "description": "Stage 4 — Svelte adapter.",
   "license": "MIT",
   "type": "module",
   "sideEffects": ["*.css"],
@@ -25,16 +25,19 @@
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests yet\"",
+    "test": "vitest run",
     "publint": "publint",
     "attw": "attw --pack ."
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@types/node": "catalog:",
+    "jsdom": "^25.0.1",
     "publint": "0.2.12",
+    "svelte": "^5.57.0",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",
@@ -44,5 +47,12 @@
     "type": "git",
     "url": "git+https://github.com/trio-telecom/navx.git",
     "directory": "packages/svelte"
+  },
+  "dependencies": {
+    "@navx/core": "workspace:*"
+  },
+  "//peerDependencies": "Nothing is imported from svelte: the store contract and the action contract are structural, which is why one build serves 3, 4 and 5 (including runes mode).",
+  "peerDependencies": {
+    "svelte": ">=3"
   }
 }

@@ -55,8 +55,16 @@ export interface NavMachine {
 }
 
 export interface NavMachineConfig {
-  /** Starting mode. `attach()` corrects this from the stylesheet on first read. */
-  readonly mode?: NavMode;
+  /**
+   * Starting mode. `attach()` corrects this from the stylesheet on first read.
+   *
+   * `| undefined` is explicit because this repo builds with
+   * `exactOptionalPropertyTypes`, under which `{ mode: undefined }` is *not*
+   * assignable to `{ mode?: NavMode }`. Every adapter destructures a caller's
+   * options and forwards the rest, so without this every one of them fails to
+   * compile on a field the caller simply did not set.
+   */
+  readonly mode?: NavMode | undefined;
 }
 
 const INITIAL: NavState = { mode: 'panel', panelOpen: false, openPath: [] };

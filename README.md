@@ -12,13 +12,17 @@ MIT. In active development — see the roadmap below for what exists today.
 |---|---|---|
 | [`@navx/tokens`](packages/tokens) | 1 | **shipping** — 201 tokens, dark theme, RTL, ten skins, 2.3 kB gzipped |
 | [`@navx/styles`](packages/styles) | 2 | **shipping** — 4.1 kB gzipped, zero `!important`, zero physical-direction properties |
-| [`@navx/core`](packages/core) | 3 | **shipping** — 4.2 kB gzipped, provable `detach()`, full keyboard + ARIA |
-| [`@navx/react`](packages/react) · [`vue`](packages/vue) · [`svelte`](packages/svelte) · [`angular`](packages/angular) · [`element`](packages/element) | 4 | scaffold |
+| [`@navx/core`](packages/core) | 3 | **shipping** — 4.3 kB gzipped, provable `detach()`, full keyboard + ARIA |
+| [`@navx/react`](packages/react) | 4 | **shipping** — 620 B, `useSyncExternalStore` |
+| [`@navx/vue`](packages/vue) | 4 | **shipping** — 702 B, `shallowRef` + `onScopeDispose` |
+| [`@navx/svelte`](packages/svelte) | 4 | **shipping** — 429 B, a store and an action |
+| [`@navx/element`](packages/element) | 4 | **shipping** — 861 B, `<navx-nav>`, no build step |
+| [`@navx/angular`](packages/angular) | 4 | **shipping** — 2.1 kB, standalone directive, signals, APF |
 | [`@navx/presets`](packages/presets) | 5 | scaffold |
 
-The scaffolds are empty but real: they build, typecheck, and pass `publint` and
-`attw`. An empty package that publishes cleanly is cheap; retrofitting a broken
-exports map across nine packages is not.
+The remaining scaffold is empty but real: it builds, typechecks, and passes
+`publint` and `attw`. An empty package that publishes cleanly is cheap;
+retrofitting a broken exports map across nine packages is not.
 
 ## Getting started
 
@@ -78,8 +82,8 @@ absent, so outside contributors still get a green CI.
 | 1 | Monorepo, build, CI, tokens | ✅ done |
 | 2 | The stylesheet — logical properties, container queries, ten skins as tokens | ✅ done |
 | 3 | Headless core — state machine, ARIA, keyboard, `destroy()` | ✅ done |
-| 4 | Adapters | next |
-| 5 | Presets — the 46 catalogue variants as data | |
+| 4 | Adapters — React, Vue, Svelte, Angular, custom element | ✅ done |
+| 5 | Presets — the 46 catalogue variants as data | next |
 | 6 | Scroll behaviours, grid mega-menu, runtime theming | |
 | 7 | Docs, migration, v1.0.0 | |
 
@@ -109,3 +113,39 @@ the inline end correctly; Bootstrap 4's `body { text-align: left }` then kept
 the *label* pinned left, and the two collided. Legacy failed 35 chevron-side,
 18 chevron-overlap and 56 drawer-side checks in Arabic; the new stylesheet
 fails none.
+
+### Stage 4 result
+
+Five adapters, and the numbers are the argument. Every one of them is a
+lifecycle wrapper over the same machine — no adapter contains a transition, an
+ARIA rule, a key handler or a breakpoint:
+
+| | gzipped | integration |
+|---|---|---|
+| `@navx/svelte` | 429 B | a plain store + an action |
+| `@navx/react` | 620 B | `useSyncExternalStore` + a ref callback |
+| `@navx/vue` | 702 B | `shallowRef` + `watch(flush: 'post')` + `onScopeDispose` |
+| `@navx/element` | 861 B | `<navx-nav>`, light DOM, explicit registration |
+| `@navx/angular` | 2.1 kB | standalone directive + signals, via ng-packagr |
+
+A React app ships **4.96 kB** of JavaScript in total, core included. All five
+are budgeted in [`.size-limit.json`](.size-limit.json), so thinness is enforced
+rather than claimed.
+
+Two things worth flagging from [`docs/stage4.md`](docs/stage4.md).
+
+**Vue's `readonly()` would have silently undone the whole design.** Snapshot
+identity is load-bearing — `reduce()` returns the same object when nothing
+changed, which is what makes a `ResizeObserver` firing on every pixel of a drag
+cost one comparison instead of a render. `readonly()` is deep, so reading
+`.value` through it hands back a *proxy* of the snapshot, and
+`state.value === machine.getState()` becomes false. Vue skips frozen objects,
+so this survives a casual test. `shallowReadonly` is the fix; the identity
+assertion is now a test.
+
+**Angular's contract is a compile-time one, so the test is a compiler.**
+`tsc --noEmit` checks our sources and ng-packagr emits *partial* declarations
+that no template type-checker has seen. `pnpm --filter @navx/angular test`
+compiles a real consumer component against the built `dist/` in full mode with
+`strictTemplates` — and compiles a second fixture that **must fail**, because a
+green type-check only means something if a red one is reachable.

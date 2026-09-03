@@ -25,16 +25,18 @@
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests yet\"",
+    "test": "vitest run",
     "publint": "publint",
     "attw": "attw --pack ."
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@types/node": "catalog:",
+    "jsdom": "^25.0.1",
     "publint": "0.2.12",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",
@@ -44,5 +46,8 @@
     "type": "git",
     "url": "git+https://github.com/trio-telecom/navx.git",
     "directory": "packages/element"
+  },
+  "dependencies": {
+    "@navx/core": "workspace:*"
   }
 }

@@ -25,16 +25,24 @@
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests yet\"",
+    "test": "vitest run",
     "publint": "publint",
     "attw": "attw --pack ."
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "catalog:",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^25.0.1",
     "publint": "0.2.12",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",
@@ -44,5 +52,12 @@
     "type": "git",
     "url": "git+https://github.com/trio-telecom/navx.git",
     "directory": "packages/react"
+  },
+  "dependencies": {
+    "@navx/core": "workspace:*"
+  },
+  "//peerDependencies": "React 18 is the floor because useSyncExternalStore is: on 17 this adapter cannot exist without the shim, and shipping the shim would put a second store implementation in every consumer's bundle.",
+  "peerDependencies": {
+    "react": ">=18"
   }
 }
