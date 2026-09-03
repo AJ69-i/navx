@@ -17,6 +17,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./scrollspy": {
+      "import": {
+        "types": "./dist/scrollspy.d.ts",
+        "default": "./dist/scrollspy.js"
+      },
+      "require": {
+        "types": "./dist/scrollspy.d.cts",
+        "default": "./dist/scrollspy.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -32,6 +42,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@types/node": "catalog:",
+    "jsdom": "^25.0.1",
     "publint": "0.2.12",
     "tsup": "catalog:",
     "typescript": "catalog:",
@@ -45,5 +56,11 @@
     "type": "git",
     "url": "git+https://github.com/trio-telecom/navx.git",
     "directory": "packages/core"
+  },
+  "//typesVersions": "node10 resolution predates `exports` and cannot follow ./scrollspy into dist.",
+  "typesVersions": {
+    "*": {
+      "scrollspy": ["./dist/scrollspy.d.ts"]
+    }
   }
 }

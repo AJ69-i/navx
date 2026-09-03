@@ -18,6 +18,18 @@ export type NavMode = 'bar' | 'panel';
 
 export interface NavState {
   readonly mode: NavMode;
+  /**
+   * The section scroll-spy currently considers active, or `null`.
+   *
+   * `null` rather than optional, so every field of a snapshot is always
+   * present. Under `exactOptionalPropertyTypes` an optional field forces every
+   * construction site to decide whether to include it, and a state machine
+   * whose shape varies is a state machine whose equality is unreliable.
+   *
+   * Only `@navx/core/scrollspy` ever sets it. A nav without scroll-spy leaves
+   * it `null` forever and `attach()` never touches `data-navx-current`.
+   */
+  readonly activeId: string | null;
   /** Off-canvas drawer. Always false in bar mode, where there is no drawer. */
   readonly panelOpen: boolean;
   /**
@@ -42,6 +54,8 @@ export type NavEvent =
   | { type: 'SUBMENU_TOGGLE'; path: readonly string[] }
   /** Closes the deepest open submenu — what Escape does. */
   | { type: 'SUBMENU_CLOSE_INNERMOST' }
+  /** Scroll-spy reporting which section is in view. `null` means none. */
+  | { type: 'SPY_SET'; id: string | null }
   | { type: 'CLOSE_ALL' };
 
 export type NavListener = (state: NavState, previous: NavState) => void;
@@ -67,7 +81,7 @@ export interface NavMachineConfig {
   readonly mode?: NavMode | undefined;
 }
 
-const INITIAL: NavState = { mode: 'panel', panelOpen: false, openPath: [] };
+const INITIAL: NavState = { mode: 'panel', panelOpen: false, openPath: [], activeId: null };
 
 const samePath = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((id, i) => id === b[i]);
@@ -88,7 +102,13 @@ export function reduce(state: NavState, event: NavEvent): NavState {
       // drawer accordion is not the same box as a dropdown positioned under a
       // bar item, and leaving it open mid-transition is how legacy produced
       // menus stranded off-screen.
-      return { mode: event.mode, panelOpen: false, openPath: [] };
+      //
+      // Spreading `state` rather than building a fresh object is load-bearing:
+      // this was the one case that constructed a whole new state, so adding a
+      // field would silently have dropped `activeId` every time the viewport
+      // crossed 992px. What you are looking at is a bug that a spread prevents
+      // and a literal invites.
+      return { ...state, mode: event.mode, panelOpen: false, openPath: [] };
     }
 
     case 'PANEL_OPEN':
@@ -126,6 +146,11 @@ export function reduce(state: NavState, event: NavEvent): NavState {
     case 'SUBMENU_CLOSE_INNERMOST': {
       if (state.openPath.length === 0) return state;
       return { ...state, openPath: state.openPath.slice(0, -1) };
+    }
+
+    case 'SPY_SET': {
+      if (event.id === state.activeId) return state;
+      return { ...state, activeId: event.id };
     }
 
     case 'CLOSE_ALL': {

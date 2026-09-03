@@ -283,6 +283,9 @@ export function attach(
   // ── rendering state to attributes ─────────────────────────────────────────
   const submenus = () => [...root.querySelectorAll<HTMLElement>(SUBMENU)];
 
+  /** Latches once scroll-spy reports a section — see `render`. */
+  let spyEngaged = false;
+
   const render = (state: NavState, previous?: NavState) => {
     const openKey = state.openPath.join('|');
 
@@ -302,6 +305,41 @@ export function attach(
         // Only claimed when the author gave the menu an id — the core never
         // invents one, because a generated id is what breaks hydration.
         if (submenu.id) setAttr(chevron, 'aria-controls', submenu.id);
+      }
+    }
+
+    /**
+     * Scroll-spy's active section, if there is one.
+     *
+     * `@navx/core/scrollspy` observes and sends `SPY_SET`; this is where that
+     * state becomes DOM, so the rule that exactly one module writes the nav's
+     * markup survives Stage 6.
+     *
+     * `spyEngaged` matters. `data-navx-current` is also how a preset marks the
+     * current page, so a nav *without* scroll-spy must never have it touched —
+     * clearing it on the first render would silently un-mark the author's own
+     * current item. The flag latches the first time a section goes active, so
+     * the cost to every non-spying nav is one comparison.
+     */
+    if (state.activeId !== null) spyEngaged = true;
+    if (spyEngaged && (!previous || previous.activeId !== state.activeId)) {
+      /**
+       * Once scroll-spy is engaged it owns `data-navx-current` for the whole
+       * nav, including items whose link is the `href="#"` placeholder.
+       *
+       * The first version skipped those to protect a page's own "current page"
+       * marker, and the browser gate caught the consequence immediately: Home
+       * stayed lit while Features lit up too, so two items read as current at
+       * once. On a page that scroll-spies, "where you are" is a scroll
+       * position — a second, static answer to the same question is just wrong.
+       * A nav that never spies is still untouched, which is what the latch is
+       * for, and `written` still restores the original marker on detach.
+       */
+      const target = state.activeId === null ? null : `#${state.activeId}`;
+      for (const item of root.querySelectorAll<HTMLElement>('.navx-item, .navx-submenu-item')) {
+        const link = item.querySelector<HTMLAnchorElement>(':scope > a, :scope > * > a');
+        const active = target !== null && link?.getAttribute('href') === target;
+        setAttr(item, 'data-navx-current', active ? '' : null);
       }
     }
 

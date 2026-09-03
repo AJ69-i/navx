@@ -153,3 +153,56 @@ No `preventDefault()` on a link, ever. ⌘-click, middle-click, `target`,
 them.
 
 MIT.
+
+## Scroll-spy
+
+A subpath export, so navs that don't want it pay nothing:
+
+```ts
+import { attach, createNav } from '@navx/core';
+import { spy } from '@navx/core/scrollspy';
+
+const machine = createNav();
+const detach = attach(nav, machine);
+const stop = spy(nav, machine, { offset: 64 }); // your sticky header's height
+```
+
+It highlights the item whose section you are looking at, by sending `SPY_SET` to
+the machine. `attach()` renders `state.activeId` onto `data-navx-current`, so
+the module writes no markup itself and NAVX still has exactly one DOM writer.
+
+Because `activeId` is on `NavState`, every adapter already observes it — using
+scroll-spy from React, Vue, Svelte, Angular or the custom element is one effect
+that calls `spy()` and returns `stop`.
+
+| option | | |
+|---|---|---|
+| `offset` | `0` | Room to leave above a section. Sets `scroll-margin-block-start` and positions the activation probe. |
+| `smooth` | `true` | Set `scroll-behavior: smooth` on the scrolling element. |
+| `scroller` | document element | Which element gets `scroll-behavior`. |
+
+There is deliberately **no click handler and no scroll animation**. A link to
+`#pricing` is a fragment link, and the browser already navigates to one
+smoothly, stops short of a sticky header, moves focus to the target and adds a
+history entry. That is also why there is no `speed` option: a duration is the
+one thing native smooth scrolling will not give you.
+
+Migrating from legacy: `scrollSpyOffset: -60` is `offset: 60` — one number with
+one meaning, rather than legacy's signed value that was negated for the scroll
+destination and `Math.abs()`-ed for the activation test. `scrollSpySpeed` has no
+equivalent; see [`docs/stage6.md`](../../docs/stage6.md).
+
+`stop()` restores every property it wrote — on the *page's* sections, not the
+nav's — and clears the machine, so a route change leaves nothing behind.
+
+## Overlay colour
+
+Legacy's `overlayColor` option is a token:
+
+```css
+.navx { --navx-overlay-background: linear-gradient(135deg, #FAD7A1 10%, #E96D71 100%); }
+```
+
+Unlike the option it replaces, it can be themed, can answer
+`prefers-color-scheme`, can change at a breakpoint, and can differ between two
+navs on the same page.

@@ -57,6 +57,12 @@ const MOUNTS = [
     prefix: '/navx/presets/',
     root: path.join(REPO_ROOT, '..', '..', 'packages', 'presets', 'dist'),
   },
+  // Stage 6: the opt-in scroll-spy subpath, served like the core it extends.
+  {
+    prefix: '/navx/scrollspy.js',
+    root: path.join(REPO_ROOT, '..', '..', 'packages', 'core', 'dist', 'scrollspy.js'),
+    file: true,
+  },
   { prefix: '/harness-tools/', root: path.join(REPO_ROOT, 'tools') },
   { prefix: '/legacy/', root: LEGACY_ROOT },
   { prefix: '/', root: paths.harness },

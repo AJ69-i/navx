@@ -12,7 +12,7 @@ MIT. In active development — see the roadmap below for what exists today.
 |---|---|---|
 | [`@navx/tokens`](packages/tokens) | 1 | **shipping** — 201 tokens, dark theme, RTL, ten skins, 2.3 kB gzipped |
 | [`@navx/styles`](packages/styles) | 2 | **shipping** — 4.1 kB gzipped, zero `!important`, zero physical-direction properties |
-| [`@navx/core`](packages/core) | 3 | **shipping** — 4.3 kB gzipped, provable `detach()`, full keyboard + ARIA |
+| [`@navx/core`](packages/core) | 3 | **shipping** — 4.5 kB gzipped, provable `detach()`, full keyboard + ARIA, plus `./scrollspy` at 1.05 kB |
 | [`@navx/react`](packages/react) | 4 | **shipping** — 620 B, `useSyncExternalStore` |
 | [`@navx/vue`](packages/vue) | 4 | **shipping** — 702 B, `shallowRef` + `onScopeDispose` |
 | [`@navx/svelte`](packages/svelte) | 4 | **shipping** — 429 B, a store and an action |
@@ -84,8 +84,53 @@ absent, so outside contributors still get a green CI.
 | 3 | Headless core — state machine, ARIA, keyboard, `destroy()` | ✅ done |
 | 4 | Adapters — React, Vue, Svelte, Angular, custom element | ✅ done |
 | 5 | Presets — the catalogue as data, and one markup contract | ✅ done |
-| 6 | Scroll behaviours, grid mega-menu, runtime theming | next |
-| 7 | Docs, migration, v1.0.0 | |
+| 6 | Scroll-spy and overlay theming — the deferred legacy options | ✅ done |
+| 7 | Docs, migration, v1.0.0 | next |
+
+### Stage 6 result
+
+The two options Stage 5 deferred, and they went opposite ways.
+
+**`overlayColor` was already implemented.** Legacy took the drawer's backdrop as
+a JavaScript option and wrote it to an inline style, so it could not be themed,
+could not answer `prefers-color-scheme`, and could not differ between two navs
+on one page. Stage 1 had already made it a token, so the migration is one
+declaration — and a gate proves it, including that a token scopes where the
+option never could:
+
+```css
+.navx { --navx-overlay-background: linear-gradient(135deg, #FAD7A1 10%, #E96D71 100%); }
+```
+
+**`scrollSpy` became 1.05 kB of pure observation.** `@navx/core/scrollspy` is a
+subpath export, so navs that don't want it are unaffected. It writes no nav
+markup: it reads the page, sends `SPY_SET`, and `attach()` renders
+`state.activeId` — so NAVX still has exactly one module that touches the nav's
+DOM, which is the rule most at risk when a feature arrives last.
+
+Most of legacy's implementation turned out to be browser features:
+
+| | legacy | Stage 6 |
+|---|---|---|
+| scroll animation | ~90 lines of rAF + `easeInOutCubic` | `scroll-behavior: smooth` |
+| offset | arithmetic on `offsetTop` | `scroll-margin-block-start` |
+| activation | a `scroll` handler on every event | `IntersectionObserver` |
+| measurement | cached, re-measured on resize | live rects, on a boundary crossing |
+| focus and history after a jump | — | native fragment navigation |
+| listeners | 3 | 0 in the common path |
+
+There is no click handler: a link to `#pricing` is a fragment link, and the
+browser already scrolls to it smoothly, stops short of a sticky header, moves
+focus and adds a history entry. Legacy re-implemented the first two and omitted
+the last two. `scrollSpySpeed` has no equivalent, deliberately — a duration is
+the one thing native smooth scrolling won't give you, and buying it back costs
+an animation loop that fights the user's own scrolling.
+
+The gates caught two real defects: `MODE_SET` was the one reducer case building
+a fresh state object, so it would have dropped `activeId` on every viewport
+change past 992px; and the first render made *two* items read as current at
+once, because a page's static "current page" marker and scroll-spy's live one
+both survived. Both are in [`docs/stage6.md`](docs/stage6.md).
 
 ### Stage 5 result
 

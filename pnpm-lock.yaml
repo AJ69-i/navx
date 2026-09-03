@@ -103,6 +103,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.10.2
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
       publint:
         specifier: 0.2.12
         version: 0.2.12

@@ -174,3 +174,53 @@ describe('isOpen', () => {
     expect(isOpen(s, [])).toBe(false);
   });
 });
+
+describe('scroll-spy state', () => {
+  it('records and clears the active section', () => {
+    const nav = createNav();
+    expect(nav.getState().activeId).toBeNull();
+
+    nav.send({ type: 'SPY_SET', id: 'pricing' });
+    expect(nav.getState().activeId).toBe('pricing');
+
+    nav.send({ type: 'SPY_SET', id: null });
+    expect(nav.getState().activeId).toBeNull();
+  });
+
+  it('returns the same object when the section has not changed', () => {
+    const nav = createNav();
+    nav.send({ type: 'SPY_SET', id: 'pricing' });
+    const before = nav.getState();
+    // Scrolling within one section fires the observer repeatedly; each of
+    // those must cost a comparison rather than a render.
+    expect(nav.send({ type: 'SPY_SET', id: 'pricing' })).toBe(before);
+  });
+
+  it('notifies subscribers only on a real change', () => {
+    const nav = createNav();
+    let calls = 0;
+    nav.subscribe(() => {
+      calls++;
+    });
+    nav.send({ type: 'SPY_SET', id: 'a' });
+    nav.send({ type: 'SPY_SET', id: 'a' });
+    nav.send({ type: 'SPY_SET', id: 'b' });
+    expect(calls).toBe(2);
+  });
+
+  it('survives crossing the breakpoint', () => {
+    const nav = createNav({ mode: 'panel' });
+    nav.send({ type: 'PANEL_OPEN' });
+    nav.send({ type: 'SPY_SET', id: 'features' });
+
+    // MODE_SET is the one transition that used to build a whole new state
+    // object rather than spreading, so it would have dropped this field on
+    // every resize past 992px. Which section you are reading is not something
+    // a viewport change should forget.
+    nav.send({ type: 'MODE_SET', mode: 'bar' });
+    const state = nav.getState();
+    expect(state.mode).toBe('bar');
+    expect(state.panelOpen).toBe(false);
+    expect(state.activeId).toBe('features');
+  });
+});

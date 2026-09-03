@@ -135,6 +135,19 @@ jobs:
       - name: Stage 5 — cross-adapter DOM identity
         run: pnpm --filter @navx/baseline-harness run stage5:identity
 
+      # Stage 6's two features, in a real browser: scroll-spy needs a page that
+      # actually scrolls and an IntersectionObserver, and overlayColor is a
+      # claim about the token reaching the rendered overlay.
+      - if: steps.guard.outputs.ready == 'true'
+        name: Stage 6 — scroll-spy and overlay theming
+        env:
+          NAVX_LEGACY_ROOT: ${{ github.workspace }}/.legacy
+        run: |
+          pnpm --filter @navx/baseline-harness exec node tools/serve.mjs &
+          npx wait-on http://localhost:4317/fixtures/manifest.json
+          pnpm --filter @navx/baseline-harness run stage6:scrollspy
+          pnpm --filter @navx/baseline-harness run stage6:overlay
+
       - if: always() && steps.guard.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:

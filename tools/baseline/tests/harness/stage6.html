@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAVX Stage 6 harness — scroll-spy</title>
+
+<link rel="stylesheet" href="/navx/tokens.css">
+<link rel="stylesheet" href="/navx/navx.css">
+
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+  /* A sticky bar, which is the whole reason `offset` exists: without it a
+     section scrolled to the top of the viewport hides behind the nav. */
+  .navx { position: sticky; inset-block-start: 0; background: #fff; z-index: 10; }
+  section { padding: 0 24px; border-block-end: 1px solid #eee; }
+  section h2 { margin: 0; padding-block: 8px; }
+  #tail { block-size: 120vh; }
+</style>
+</head>
+<body>
+
+<nav class="navx" id="nav">
+  <div class="navx-header">
+    <div class="navx-logo"><a href="#"><span>Logo</span></a></div>
+    <button class="navx-toggler" type="button" aria-expanded="false" aria-label="Menu">
+      <i class="navx-toggler-icon"></i>
+    </button>
+  </div>
+  <div class="navx-panel">
+    <div class="navx-panel-header">
+      <button class="navx-panel-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <ul class="navx-menu">
+      <!-- `href="#"` is a placeholder and must never be treated as a section. -->
+      <li class="navx-item" data-navx-current=""><a class="navx-link" href="#">Home</a></li>
+      <li class="navx-item"><a class="navx-link" href="#features">Features</a></li>
+      <li class="navx-item"><a class="navx-link" href="#pricing">Pricing</a></li>
+      <li class="navx-item"><a class="navx-link" href="#faq">FAQ</a></li>
+      <!-- A fragment with no matching element: must be skipped, not throw. -->
+      <li class="navx-item"><a class="navx-link" href="#nowhere">Nowhere</a></li>
+    </ul>
+  </div>
+  <div class="navx-overlay"></div>
+</nav>
+
+<section id="features" style="block-size: 700px"><h2>Features</h2></section>
+<section id="pricing" style="block-size: 700px"><h2>Pricing</h2></section>
+<section id="faq" style="block-size: 700px"><h2>FAQ</h2></section>
+<div id="tail"></div>
+
+<script type="module">
+/**
+ * The Stage 6 harness.
+ *
+ * A page that actually scrolls, so `IntersectionObserver` and the browser's
+ * own fragment navigation are the real ones rather than jsdom stand-ins. The
+ * unit tests cover the module's decisions; this covers whether those decisions
+ * survive contact with a scroll container, a sticky header and a real observer.
+ *
+ * Query params: offset (default 60), smooth (default 1), spy (default 1).
+ */
+import { attach, createNav } from '/navx/core.js';
+import { spy } from '/navx/scrollspy.js';
+
+const params = new URLSearchParams(location.search);
+const offset = Number(params.get('offset') ?? 60);
+const smooth = params.get('smooth') !== '0';
+
+const root = document.getElementById('nav');
+const machine = createNav();
+
+const detach = attach(root, machine);
+const stop = params.get('spy') === '0' ? () => {} : spy(root, machine, { offset, smooth });
+
+// Exposed so the assertion tool can drive teardown and read state without
+// reaching into module scope.
+window.__spy = {
+  machine,
+  offset,
+  stop() {
+    stop();
+    detach();
+  },
+  state: () => machine.getState(),
+  currentIds: () =>
+    [...root.querySelectorAll('.navx-item[data-navx-current]')].map(
+      (li) => li.querySelector('a')?.getAttribute('href') ?? '?',
+    ),
+};
+
+document.documentElement.setAttribute('data-navx-ready', '1');
+</script>
+</body>
+</html>

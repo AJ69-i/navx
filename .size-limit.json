@@ -12,9 +12,15 @@
     "gzip": true
   },
   {
-    "name": "@navx/core (machine + DOM binding)",
+    "name": "@navx/core (machine + DOM binding, incl. activeId render)",
     "path": "packages/core/dist/index.js",
-    "limit": "4.5 kB",
+    "limit": "4.6 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/core/scrollspy",
+    "path": "packages/core/dist/scrollspy.js",
+    "limit": "1.2 kB",
     "gzip": true
   },
   {
