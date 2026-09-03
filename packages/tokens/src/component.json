@@ -3,7 +3,7 @@
 
   "nav": {
     "background": { "$type": "color", "$value": "{surface.default}" },
-    "min-block-size": { "$type": "dimension", "$value": "{size.16}" },
+    "min-block-size": { "$type": "dimension", "$value": "{size.18}" },
     "font-family": { "$type": "fontFamily", "$value": "{font.family.inherit}" },
     "z-index": { "$type": "number", "$value": "{layer.nav}" }
   },
@@ -20,8 +20,13 @@
       "$value": "{size.8}",
       "$description": "Panel mode. The container query swaps this for the bar value; the legacy $x/$x-landscape pair collapses to one token."
     },
-    "padding-block-bar": { "$type": "dimension", "$value": "{size.6}" },
-    "padding-inline": { "$type": "dimension", "$value": "{size.9}" },
+    "padding-block-start-bar": {
+      "$type": "dimension",
+      "$value": "{size.6}",
+      "$description": "Bar mode. Split from its end twin because the border skins rebalance the two against the accent border: padding-start + padding-end + border-start + border-end must stay constant, or applying a skin changes the height of the bar."
+    },
+    "padding-block-end-bar": { "$type": "dimension", "$value": "{size.6}" },
+    "padding-inline": { "$type": "dimension", "$value": "{size.10}" },
 
     "accent-border": {
       "$description": "Zero-width transparent block borders the bar-mode link always declares, so the three BORDER skins are token overlays rather than stylesheets that re-write padding.",
@@ -30,9 +35,25 @@
       "color-active": { "$type": "color", "$value": "{color.transparent}" }
     },
 
+    "icon": {
+      "$description": "A leading icon inside a bar/panel link. Fixed inline size in panel mode so labels line up in a column; auto in the bar.",
+      "inline-size": { "$type": "dimension", "$value": "{size.14}" },
+      "font-size": { "$type": "dimension", "$value": "{font.size.icon-md}" },
+      "font-size-fa": {
+        "$type": "dimension",
+        "$value": "{font.size.icon}",
+        "$description": "Font Awesome glyphs are drawn smaller than their em box, so they need their own size to look level with the label."
+      }
+    },
+
     "decoration": {
       "$description": "One pseudo-element affordance the base stylesheet always renders, so the four SHAPE skins (boxed, rounded-boxed, mini-circle, bottom-arrow) become token overlays instead of separate stylesheets. Transparent and zero-sized by default, so it costs nothing when unused.",
       "background": { "$type": "color", "$value": "{color.transparent}" },
+      "background-icon": {
+        "$type": "color",
+        "$value": "{color.transparent}",
+        "$description": "Opt-in: the accent a skin puts behind an ICON-only item. Transparent by default because a half-height box behind a bare icon button reads as a bug — the skins whose decoration fills the whole link (colored, mini-circle, bottom-arrow) set it, boxed and rounded-boxed leave it alone. Legacy hand-maintained three different exclusion lists across ten stylesheets to say the same thing."
+      },
       "inline-size": { "$type": "dimension", "$value": "0" },
       "block-size": { "$type": "dimension", "$value": "0" },
       "inset-block": { "$type": "dimension", "$value": "50%" },
@@ -46,9 +67,9 @@
   "panel": {
     "$description": "The off-canvas panel.",
     "background": { "$type": "color", "$value": "{surface.default}" },
-    "inline-size": { "$type": "dimension", "$value": "{size.20}" },
+    "inline-size": { "$type": "dimension", "$value": "{size.22}" },
     "inline-size-narrow": { "$type": "dimension", "$value": "100%" },
-    "padding": { "$type": "dimension", "$value": "{size.9}" },
+    "padding": { "$type": "dimension", "$value": "{size.10}" },
     "z-index": { "$type": "number", "$value": "{layer.panel}" },
     "transition-duration": { "$type": "duration", "$value": "{motion.duration.panel}" }
   },
@@ -60,12 +81,12 @@
 
   "dropdown": {
     "background": { "$type": "color", "$value": "{surface.raised}" },
-    "inline-size": { "$type": "dimension", "$value": "{size.19}" },
+    "inline-size": { "$type": "dimension", "$value": "{size.21}" },
     "shadow": { "$type": "shadow", "$value": "{shadow.dropdown}" },
     "z-index": { "$type": "number", "$value": "{layer.dropdown}" },
     "indent": {
       "$type": "dimension",
-      "$value": "{size.9}",
+      "$value": "{size.10}",
       "$description": "Per-level indent. Multiplied by depth via calc(), replacing the legacy 5-rung padding-left ladder."
     },
     "link": {
@@ -74,7 +95,7 @@
       "background-hover": { "$type": "color", "$value": "{surface.active}" },
       "font-size": { "$type": "dimension", "$value": "{font.size.sm}" },
       "padding-block": { "$type": "dimension", "$value": "{size.9}" },
-      "padding-inline": { "$type": "dimension", "$value": "{size.10}" }
+      "padding-inline": { "$type": "dimension", "$value": "{size.11}" }
     }
   },
 
@@ -84,8 +105,17 @@
     "color-hover": { "$type": "color", "$value": "{text.accent}" },
     "size": { "$type": "dimension", "$value": "{size.4}" },
     "thickness": { "$type": "dimension", "$value": "1px" },
-    "rotation": { "$type": "other", "$value": "45deg" },
-    "rotation-open": { "$type": "other", "$value": "-135deg" }
+    "rotation-block": {
+      "$type": "other",
+      "$value": "45deg",
+      "$description": "Points at the block end — \"this opens below me\". Direction-independent on purpose: a menu that expands downward expands downward in Arabic too."
+    },
+    "rotation-block-open": { "$type": "other", "$value": "-135deg" },
+    "rotation-inline": {
+      "$type": "other",
+      "$value": "-45deg",
+      "$description": "Points at the inline end — \"this opens beside me\". The RTL block flips this one, and only this one."
+    }
   },
 
   "button": {
@@ -110,7 +140,7 @@
   "badge": {
     "background": { "$type": "color", "$value": "{accent.default}" },
     "color": { "$type": "color", "$value": "{text.on-accent}" },
-    "font-size": { "$type": "dimension", "$value": "{font.size.xs}" },
+    "font-size": { "$type": "dimension", "$value": "{font.size.2xs}" },
     "min-inline-size": { "$type": "dimension", "$value": "18px" },
     "block-size": { "$type": "dimension", "$value": "18px" },
     "radius": { "$type": "dimension", "$value": "{radius.pill}" }
@@ -125,11 +155,11 @@
 
   "logo": {
     "block-size": { "$type": "dimension", "$value": "40px" },
-    "block-size-bar": { "$type": "dimension", "$value": "{size.15}" }
+    "block-size-bar": { "$type": "dimension", "$value": "{size.17}" }
   },
 
   "toggler": {
-    "size": { "$type": "dimension", "$value": "{size.16}" },
+    "size": { "$type": "dimension", "$value": "{size.18}" },
     "color": { "$type": "color", "$value": "{text.default}" }
   },
 
@@ -150,6 +180,7 @@
     "background": { "$type": "color", "$value": "{surface.raised}" },
     "border-color": { "$type": "color", "$value": "{border.default}" },
     "color": { "$type": "color", "$value": "{text.default}" },
-    "padding": { "$type": "dimension", "$value": "{size.9}" }
+    "font-size": { "$type": "dimension", "$value": "{font.size.md}" },
+    "padding": { "$type": "dimension", "$value": "{size.10}" }
   }
 }

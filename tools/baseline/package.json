@@ -14,11 +14,22 @@
     "baseline:update": "playwright test --update-snapshots",
     "baseline:check": "playwright test",
     "baseline:report": "playwright show-report",
-    "stage0": "npm run extract && npm run baseline:update"
+    "stage0": "npm run extract && npm run baseline:update",
+    "stage2": "node tools/compare-stage2.mjs",
+    "stage2:sheet": "node tools/contact-sheet.mjs",
+    "stage2:probe": "node tools/probe-geometry.mjs",
+    "stage2:boxes": "node tools/diff-boxes.mjs",
+    "stage2:colours": "node tools/diff-colours.mjs",
+    "stage2:layers": "node tools/layer-loss.mjs",
+    "stage2:utilities": "node tools/assert-utilities.mjs",
+    "stage2:rtl": "node tools/rtl-audit.mjs",
+    "stage2:rtl-sheet": "node tools/rtl-sheet.mjs"
   },
   "//devDependencies": "Playwright is pinned exactly, not ranged. Chromium build differences change text rasterisation, which silently invalidates every baseline. Upgrading is a deliberate act that requires re-approving the snapshots.",
   "devDependencies": {
     "@playwright/test": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "pixelmatch": "6.0.0",
+    "pngjs": "7.0.0"
   }
 }

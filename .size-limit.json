@@ -10,5 +10,17 @@
     "path": "packages/tokens/dist/index.js",
     "limit": "6 kB",
     "gzip": true
+  },
+  {
+    "name": "@navx/styles (css, minified)",
+    "path": "packages/styles/dist/navx.min.css",
+    "limit": "5 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/tokens + @navx/styles (everything a page loads)",
+    "path": ["packages/tokens/dist/tokens.css", "packages/styles/dist/navx.min.css"],
+    "limit": "7 kB",
+    "gzip": true
   }
 ]

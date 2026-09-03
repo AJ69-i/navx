@@ -1,0 +1,1571 @@
+/**
+ * @navx/styles — the NAVX stylesheet.
+ *
+ * Replaces 1,477 lines of legacy CSS. Four things make it shorter rather than
+ * just reformatted:
+ *
+ *   1. Every themeable value comes from @navx/tokens — 212 references. The 52
+ *      dimension literals that remain are structural rather than design
+ *      decisions (hairline borders, the documented indent ladder, the
+ *      chevron's 46px tap target); the build counts them, so that claim
+ *      cannot quietly stop being true.
+ *   2. One container query replaces 52 duplicated `@media (min-width: 992px)`
+ *      blocks — and, because it is a container query, the bar/panel switch is
+ *      pure CSS. Legacy needed JavaScript to add a `.navigation-landscape`
+ *      class, which is a whole category of JS/CSS desync that no longer exists.
+ *   3. Logical properties throughout, so RTL is the same stylesheet.
+ *   4. Zero `!important`. Legacy had 18.
+ *
+ * ── ON CASCADE LAYERS ──────────────────────────────────────────────────────
+ *
+ * This file is deliberately NOT wrapped in `@layer`, and that is a measured
+ * decision rather than an omission.
+ *
+ * Layers were the first draft. They killed all 18 `!important`s and gave the
+ * sheet a clean internal order. But `tools/layer-loss.mjs` then measured what
+ * layering costs against a real host page, because unlayered CSS beats layered
+ * CSS at *every* specificity: dropped into a Bootstrap 4 page, 58 NAVX
+ * declarations lost — including `.navx { display: flex }`, beaten by Reboot's
+ * `nav { display: block }`. The nav stopped being a flex container. A navbar
+ * that quietly collapses inside the most widely deployed CSS framework on the
+ * internet is not a navbar anyone should install.
+ *
+ * So the layer is the consumer's to assign, which is also where the CSS WG
+ * landed. One line, and their CSS wins everything with no `!important`:
+ *
+ *     @import url('@navx/styles/navx.css') layer(navx);
+ *
+ * `dist/navx.layer.css` is the same stylesheet pre-wrapped in `@layer navx`
+ * for consumers who can only use `<link>`.
+ *
+ * Unlayered puts the burden back on specificity discipline, so this file keeps
+ * it: every selector is one class (plus attribute/pseudo state), nothing is
+ * nested deeper than it must be, and the ordering below — base, layout,
+ * components, variants, state — is what the layer names used to say. The build
+ * gate enforces both the specificity ceiling and the zero-`!important` count,
+ * so the discipline is checked rather than promised.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.navx {
+  /* `position: relative` is what makes this the containing block for the
+     absolutely-positioned submenus — same as legacy. `container-type` is
+     added for the query below; verified in Chromium that it does NOT also
+     capture fixed-position descendants, so the off-canvas panel still
+     anchors to the viewport. */
+  position: relative;
+  container: navx / inline-size;
+
+  display: flex;
+  inline-size: 100%;
+  min-block-size: var(--navx-nav-min-block-size);
+  padding: 0;
+  font-family: var(--navx-nav-font-family);
+  /* A reset, not a design decision: the nav must not inherit the host page's
+     line-height (Bootstrap ships 1.5, Tailwind 1.5, plain UA 1.2), because
+     every bar height here is computed from padding plus a line box. Legacy
+     spelled this `line-height: initial`. Components that genuinely want a
+     ratio — the button, the input — declare `--navx-font-line-height-tight`
+     themselves. */
+  line-height: normal;
+  /**
+   * The second half of that reset, and the real fix for the overlapping RTL
+   * chevron.
+   *
+   * Bootstrap 4's Reboot ships `body { text-align: left }` — a physical value,
+   * inherited into everything. Logical properties then position the arrow
+   * correctly at the inline end (the left, in Arabic) while the label stays
+   * pinned to the left by inheritance, and the two collide. `start` follows
+   * `direction`, so the label moves with the arrow. In LTR it computes to
+   * `left` and changes nothing, which is why every LTR baseline is unaffected.
+   */
+  text-align: start;
+  background: var(--navx-nav-background);
+  box-sizing: border-box;
+  transition: background var(--navx-motion-duration-color);
+}
+
+.navx *,
+.navx *::before,
+.navx *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/**
+ * The element reset, held at exactly one class of specificity by `:where()`.
+ *
+ * The bracketing matters in both directions. `.navx a` would be (0,1,1) and
+ * would beat every single-class component rule below it — `.navx-link`'s own
+ * colour included — while `:where(.navx) :where(a)` would be (0,0,0) and would
+ * lose to Bootstrap's `a { color: #007bff }`. `.navx :where(a)` is (0,1,0):
+ * above any host reset's bare type selector, level with NAVX's components and
+ * declared before them, so the component wins on order.
+ */
+.navx :where(a) {
+  text-decoration: none;
+  color: inherit;
+}
+
+.navx :where(ul) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Keyboard users get a visible focus ring. Legacy had focus styles on
+   `.navigation-item`, an <li> with no tabindex — a selector that can never
+   match, so every focus style in the library was dead code. */
+.navx :focus-visible {
+  outline: 2px solid var(--navx-accent);
+  outline-offset: -2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT — header, panel, overlay, menu
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The compact header: brand/logo plus the toggler. Panel mode only. */
+.navx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  inline-size: 100%;
+}
+
+@container navx (min-width: 992px) {
+  .navx-header {
+    display: none;
+  }
+}
+
+/* The scrim behind the open panel. */
+.navx-overlay {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 0;
+  block-size: 0;
+  opacity: 0;
+  z-index: -1;
+  background: var(--navx-overlay-background);
+  transition: opacity var(--navx-motion-duration-panel);
+}
+
+/**
+ * The panel. In panel mode it is an off-canvas drawer; in bar mode it is
+ * simply the horizontal content area.
+ *
+ * `inset-inline-start` is the single declaration that makes RTL work: the
+ * drawer enters from the left in English and from the right in Arabic, with
+ * no second stylesheet and no `[dir]` selector.
+ */
+.navx-panel {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: -100%;
+  inline-size: var(--navx-panel-inline-size-narrow);
+  overflow-block: auto;
+  overflow-inline: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--navx-panel-background);
+  z-index: var(--navx-panel-z-index);
+  transition: inset-inline-start var(--navx-panel-transition-duration)
+    cubic-bezier(0.1, 0.1, 0.1, 0.1);
+}
+
+@media (min-width: 500px) {
+  .navx-panel {
+    inline-size: var(--navx-panel-inline-size);
+  }
+}
+
+@container navx (min-width: 992px) {
+  .navx-panel {
+    position: relative;
+    inset-block: auto;
+    inset-inline-start: auto;
+    display: flex;
+    align-items: center;
+    inline-size: 100%;
+    overflow: visible;
+    z-index: auto;
+    background: transparent;
+    transition: none;
+  }
+}
+
+.navx-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--navx-panel-padding);
+  border-block-end: 1px solid var(--navx-border);
+}
+
+@container navx (min-width: 992px) {
+  .navx-panel-header {
+    border: none;
+  }
+}
+
+.navx-panel-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 30px;
+  block-size: 30px;
+  margin-inline-start: auto;
+  padding-block-end: 2px;
+  font-size: 25px;
+  line-height: 1;
+  color: var(--navx-text);
+  cursor: pointer;
+}
+
+@container navx (min-width: 992px) {
+  .navx-panel-close {
+    display: none;
+  }
+}
+
+.navx-panel-section {
+  display: inline-flex;
+  flex-direction: column;
+  inline-size: 100%;
+  padding: var(--navx-panel-padding);
+}
+
+.navx-panel-section + .navx-panel-section {
+  padding-block-start: 0;
+}
+
+@container navx (min-width: 992px) {
+  .navx-panel-section {
+    display: inline-block;
+    inline-size: auto;
+  }
+  .navx-panel-section + .navx-panel-section {
+    padding-block-start: var(--navx-panel-padding);
+  }
+}
+
+/**
+ * The menu. Legacy stacked items with `float: left` + `display: inline-block`
+ * + `width: 100%` and killed the whitespace between them with
+ * `font-size: 0rem`. A flex column needs none of that — flex containers have
+ * no inter-item text nodes to collapse.
+ */
+.navx-menu {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+}
+
+.navx-item {
+  inline-size: 100%;
+}
+
+@container navx (min-width: 992px) {
+  .navx-menu {
+    flex-direction: row;
+    align-items: stretch;
+    align-self: stretch;
+    inline-size: auto;
+  }
+  .navx-item {
+    display: flex;
+    inline-size: auto;
+  }
+}
+
+/* Push a menu to the far edge. Named for the edge it moves toward, not for
+   a physical side, so it stays correct when the direction flips — legacy's
+   `.align-to-right { margin-left: auto }` means the wrong thing in Arabic. */
+.navx-push-end {
+  margin-inline-start: auto;
+}
+.navx-push-start {
+  margin-inline-end: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── link ──────────────────────────────────────────────────────────────── */
+
+.navx-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  inline-size: 100%;
+  padding: var(--navx-link-padding-block) var(--navx-link-padding-inline);
+  font-size: var(--navx-link-font-size);
+  letter-spacing: var(--navx-link-letter-spacing);
+  color: var(--navx-link-color);
+  border-block-end: 1px solid var(--navx-link-border-color);
+  transition: color var(--navx-motion-duration-color);
+}
+
+.navx-item:not(.navx-brand):hover > .navx-link,
+.navx-item:not(.navx-brand):focus-within > .navx-link,
+.navx-item:not(.navx-brand)[data-navx-current] > .navx-link {
+  color: var(--navx-link-color-hover);
+  background: var(--navx-link-background-hover);
+}
+
+@container navx (min-width: 992px) {
+  .navx-link {
+    block-size: 100%;
+    padding-block: var(--navx-link-padding-block-start-bar) var(--navx-link-padding-block-end-bar);
+    line-height: var(--navx-nav-min-block-size);
+    border: none;
+  }
+
+  /**
+   * The accent border — the affordance the three BORDER skins paint into.
+   *
+   * Zero-width and transparent until a skin gives it a value, and scoped to
+   * the items a border skin may accent: not the brand, not a bare icon
+   * button, not the social row. Declaring the width here rather than on every
+   * `.navx-link` matters, because a skin that reserved 2px on a link it never
+   * paints would make that link 4px taller than its neighbours.
+   */
+  :where(.navx-menu:not(.navx-social))
+    .navx-item:not(.navx-brand, [data-navx-item="icon"])
+    > .navx-link {
+    border-block-start: var(--navx-link-accent-border-block-start-width) solid transparent;
+    border-block-end: var(--navx-link-accent-border-block-end-width) solid transparent;
+  }
+
+  :where(.navx-menu:not(.navx-social))
+    .navx-item:not(.navx-brand, [data-navx-item="icon"]):hover
+    > .navx-link,
+  :where(.navx-menu:not(.navx-social))
+    .navx-item:not(.navx-brand, [data-navx-item="icon"]):focus-within
+    > .navx-link,
+  :where(.navx-menu:not(.navx-social))
+    .navx-item:not(.navx-brand, [data-navx-item="icon"])[data-navx-current]
+    > .navx-link {
+    border-block-color: var(--navx-link-accent-border-color-active);
+  }
+}
+
+/**
+ * The decoration element.
+ *
+ * Always rendered, transparent and zero-sized, so the four SHAPE skins
+ * (boxed, rounded-boxed, mini-circle, bottom-arrow) are token overlays
+ * rather than four extra stylesheets. Costs one pseudo-element and nothing
+ * visual when unused. Stage 1's token taxonomy depends on this existing.
+ */
+@container navx (min-width: 992px) {
+  .navx-link {
+    z-index: 1;
+  }
+
+  .navx-link::after {
+    content: "";
+    position: absolute;
+    inset-block-start: var(--navx-link-decoration-inset-block);
+    inset-inline-start: var(--navx-link-decoration-inset-inline);
+    translate: var(--navx-link-decoration-translate);
+    inline-size: var(--navx-link-decoration-inline-size);
+    block-size: var(--navx-link-decoration-block-size);
+    border-radius: var(--navx-link-decoration-radius);
+    clip-path: var(--navx-link-decoration-clip);
+    background: transparent;
+    z-index: -1;
+    transition: background var(--navx-motion-duration-color);
+  }
+
+  /**
+   * DECORABLE — which items a shape skin may put an accent on.
+   *
+   * Every one of legacy's skins that excluded anything excluded the brand, the
+   * logo, the avatar and the social row, so those are settled here in the
+   * selector. Icon items were the one real disagreement: `boxed` and
+   * `rounded-boxed` left them plain while `colored`, `mini-circle` and
+   * `bottom-arrow` decorated them — which is not an oversight, because a
+   * full-bleed fill behind an icon button looks deliberate and a half-height
+   * box behind one looks like a bug.
+   *
+   * So the icon item asks its own token instead of the base sheet guessing,
+   * and each skin answers by defining it or not. Ten stylesheets with three
+   * hand-maintained exclusion lists become one selector and one opt-in token.
+   */
+  :where(.navx-menu:not(.navx-social))
+    .navx-item:not(.navx-brand, .navx-logo, [data-navx-item="avatar"]):hover
+    > .navx-link::after,
+  :where(.navx-menu:not(.navx-social))
+    .navx-item:not(.navx-brand, .navx-logo, [data-navx-item="avatar"]):focus-within
+    > .navx-link::after,
+  :where(.navx-menu:not(.navx-social))
+    .navx-item:not(.navx-brand, .navx-logo, [data-navx-item="avatar"])[data-navx-current]
+    > .navx-link::after {
+    background: var(--navx-link-decoration-background);
+  }
+
+  .navx-item[data-navx-item="icon"] > .navx-link::after {
+    --navx-link-decoration-background: var(--navx-link-decoration-background-icon);
+  }
+}
+
+/* Link with a leading icon. */
+.navx-link > i {
+  inline-size: var(--navx-link-icon-inline-size);
+  font-size: var(--navx-link-icon-font-size);
+  line-height: 0;
+  text-align: center;
+}
+
+.navx-link > i[class*="fa"] {
+  font-size: var(--navx-link-icon-font-size-fa);
+}
+
+.navx-link > i + span {
+  padding-inline-start: var(--navx-size-5);
+}
+
+@container navx (min-width: 992px) {
+  .navx-link > i {
+    inline-size: auto;
+  }
+}
+
+/* ── chevron ───────────────────────────────────────────────────────────── */
+
+/**
+ * Direction lives in a token. `--navx-chevron-rotation` is 45deg in LTR and
+ * -135deg in RTL — set once in @navx/tokens under `:root:dir(rtl)`.
+ *
+ * This is the fix for the overlapping RTL chevrons: legacy pinned the
+ * indicator with `right: 0` and `float: right` plus `margin-left: 6px`, so in
+ * Arabic it landed on the wrong side of its label and collided with the text.
+ * Logical properties put it after the label in both directions, and the
+ * rotation token points it the right way.
+ */
+.navx-chevron {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 46px;
+  block-size: 100%;
+  z-index: 1;
+}
+
+.navx-chevron::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inline-size: var(--navx-chevron-size);
+  block-size: var(--navx-chevron-size);
+  margin-block-start: -3px;
+  margin-inline-start: -3px;
+  border-style: solid;
+  border-width: 0 var(--navx-chevron-thickness) var(--navx-chevron-thickness) 0;
+  border-color: transparent var(--navx-chevron-color) var(--navx-chevron-color) transparent;
+  rotate: var(--navx-chevron-rotation-block);
+  transition: border var(--navx-motion-duration-color), rotate var(--navx-motion-duration-color);
+}
+
+.navx-item:hover > .navx-link > .navx-chevron::after,
+.navx-item:focus-within > .navx-link > .navx-chevron::after,
+.navx-item[data-navx-current] > .navx-link > .navx-chevron::after {
+  border-color: transparent var(--navx-chevron-color-hover) var(--navx-chevron-color-hover)
+    transparent;
+}
+
+@container navx (min-width: 992px) {
+  .navx-chevron {
+    position: relative;
+    inline-size: var(--navx-chevron-size);
+    block-size: var(--navx-chevron-size);
+    margin-inline-start: var(--navx-size-4);
+  }
+}
+
+/* ── submenu ───────────────────────────────────────────────────────────── */
+
+.navx-submenu {
+  position: static;
+  display: block;
+  inline-size: 100%;
+  max-block-size: 0;
+  overflow: hidden;
+  background: var(--navx-dropdown-background);
+  z-index: var(--navx-dropdown-z-index);
+}
+
+.navx-submenu-item {
+  inline-size: 100%;
+}
+
+.navx-submenu-link {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  padding: var(--navx-dropdown-link-padding-block) var(--navx-dropdown-link-padding-inline);
+  font-size: var(--navx-dropdown-link-font-size);
+  color: var(--navx-dropdown-link-color);
+  border-block-end: 1px solid var(--navx-border);
+  transition: color var(--navx-motion-duration-color), background var(--navx-motion-duration-color);
+}
+
+.navx-submenu-item:hover > .navx-submenu-link,
+.navx-submenu-item:focus-within > .navx-submenu-link,
+.navx-submenu-item[data-navx-current] > .navx-submenu-link {
+  color: var(--navx-dropdown-link-color-hover);
+  background: var(--navx-dropdown-link-background-hover);
+}
+
+/**
+ * LEGACY-FIDELITY QUIRK — the panel-mode indent ladder.
+ *
+ * A first-level submenu keeps the link's own inline padding; from the second
+ * level down legacy indents 32 / 48 / 48 / 64 / 128px. That is not a scale —
+ * levels three and four are identical, which is a bug rather than a design, and
+ * the jump from 64 to 128 is another. Reproduced exactly, because Stage 2's
+ * gate is pixel fidelity against 292 approved baselines. Replacing it with a
+ * linear `calc(indent * depth)` is a v1.0 decision that needs those snapshots
+ * re-approved, like the three near-identical greys in the token ramp.
+ *
+ * Scoped to panel mode, which is the only place it applies. Legacy instead
+ * declared the ladder globally and then spent `padding-left: 19px !important`
+ * undoing it in the bar — one of the eighteen.
+ */
+@container navx (max-width: 991px) {
+  .navx-submenu .navx-submenu .navx-submenu-link {
+    padding-inline-start: 32px;
+  }
+  .navx-submenu .navx-submenu .navx-submenu .navx-submenu-link {
+    padding-inline-start: 48px;
+  }
+  .navx-submenu .navx-submenu .navx-submenu .navx-submenu .navx-submenu-link {
+    padding-inline-start: 48px;
+  }
+  .navx-submenu .navx-submenu .navx-submenu .navx-submenu .navx-submenu .navx-submenu-link {
+    padding-inline-start: 64px;
+  }
+  .navx-submenu
+    .navx-submenu
+    .navx-submenu
+    .navx-submenu
+    .navx-submenu
+    .navx-submenu
+    .navx-submenu-link {
+    padding-inline-start: 128px;
+  }
+}
+
+.navx-submenu-link > .navx-chevron {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+}
+
+@container navx (min-width: 992px) {
+  /**
+   * Submenus are positioned explicitly, which legacy never was.
+   *
+   * Legacy declared `position: absolute` and then set no block offset at all,
+   * so every dropdown landed on its *static position* — wherever the box
+   * would have been in normal flow. That works only for as long as nothing
+   * upstream changes: the static position of an abspos child of a flex
+   * container is the container's content-box corner, not the flow position,
+   * so the moment an ancestor becomes `display: flex` every menu in the
+   * library silently jumps to the top of the bar. Naming the offset costs one
+   * declaration and removes the trap.
+   *
+   * `.navx-submenu-item` becomes the containing block so a nested menu can
+   * say "level with my own row" as `inset-block-start: 0` instead of leaning
+   * on flow position again.
+   */
+  .navx-submenu {
+    position: absolute;
+    inset-block-start: 100%;
+    display: inline-block;
+    inline-size: var(--navx-dropdown-inline-size);
+    opacity: 0;
+    box-shadow: var(--navx-dropdown-shadow);
+    transition: opacity var(--navx-motion-duration-color) linear;
+  }
+
+  .navx-submenu-item {
+    position: relative;
+  }
+
+  .navx-item > .navx-submenu {
+    box-shadow: inset 0 1px 0 var(--navx-border), var(--navx-dropdown-shadow);
+  }
+
+  /* A nested submenu opens alongside its parent — toward the inline end, so
+     it flips automatically in RTL. Legacy hard-coded `left: 100%` and needed
+     a JS measurement pass to handle the other side. */
+  .navx-submenu .navx-submenu {
+    inset-block-start: 0;
+    inset-inline-start: 100%;
+  }
+
+  /**
+   * …unless it is told to open toward the inline start, near a viewport edge.
+   *
+   * One attribute does the whole job. Legacy needed two classes kept in sync by
+   * hand — `.navigation-dropdown-left` on the menu and `.submenu-indicator-left`
+   * on its arrow — so a menu could flip while its arrow still pointed the old
+   * way. `:has()` reads the side off the menu the link actually opens, and the
+   * arrow cannot disagree with it.
+   */
+  .navx-submenu[data-navx-submenu-side="start"] {
+    inset-inline-start: auto;
+    inset-inline-end: 100%;
+  }
+
+  .navx-submenu-link:has(+ [data-navx-submenu-side="start"]) > .navx-chevron::after {
+    rotate: calc(var(--navx-chevron-rotation-inline) + 180deg);
+  }
+
+  .navx-submenu-link {
+    border-block-end: none;
+  }
+
+  .navx-submenu-link > .navx-chevron {
+    inset-block-start: 50%;
+    inset-inline-end: var(--navx-size-6);
+    margin-inline-start: 0;
+    translate: 0 -50%;
+  }
+
+  .navx-submenu-link > .navx-chevron::after {
+    rotate: var(--navx-chevron-rotation-inline);
+  }
+}
+
+/**
+ * Horizontal submenu: a full-width strip under the bar, items in a row.
+ *
+ * Legacy got the row from `float: left` on every dropdown item and needed
+ * `width: 100% !important` to undo the 180px dropdown width. One `display: flex`
+ * does both, with no float and no `!important`.
+ *
+ * The items are deliberately returned to `position: static`. Everywhere else a
+ * submenu item is the containing block so a nested menu can open level with its
+ * own row; here the nested strip spans the parent's full width instead, exactly
+ * like the parent does, and that means measuring from the parent submenu.
+ */
+@container navx (min-width: 992px) {
+  .navx-submenu[data-navx-submenu="horizontal"] {
+    display: flex;
+    /* Not `stretch`: the open state caps this box with
+       `max-block-size: max-content`, and stretching items to a height that is
+       itself derived from those items resolves to zero. Items size themselves,
+       exactly as legacy's floated inline-blocks did. */
+    align-items: flex-start;
+    inline-size: 100%;
+    inset-inline-start: 0;
+  }
+  .navx-submenu[data-navx-submenu="horizontal"] > .navx-submenu-item {
+    position: static;
+    inline-size: auto;
+  }
+  .navx-submenu[data-navx-submenu="horizontal"] .navx-submenu {
+    inset-inline-start: 0;
+    inset-block-start: 100%;
+  }
+  .navx-submenu[data-navx-submenu="horizontal"] .navx-submenu-link {
+    display: flex;
+    padding: var(--navx-dropdown-link-padding-inline) var(--navx-dropdown-link-padding-inline);
+  }
+  .navx-submenu[data-navx-submenu="horizontal"] .navx-chevron {
+    position: relative;
+    inset-inline-end: 0;
+    /* Back in flow, so it needs its gap back — the vertical dropdown zeroes
+       this because there the chevron is absolutely positioned. */
+    margin-inline-start: var(--navx-chevron-size);
+  }
+  /* Points down, not along the row: this menu opens below itself. */
+  .navx-submenu[data-navx-submenu="horizontal"] .navx-chevron::after {
+    margin-block-start: var(--navx-size-3);
+    rotate: var(--navx-chevron-rotation-block);
+  }
+}
+
+/* ── mega-menu ─────────────────────────────────────────────────────────── */
+
+.navx-megamenu {
+  position: static;
+  display: block;
+  inline-size: 100%;
+  max-block-size: 0;
+  overflow: hidden;
+  font-size: var(--navx-megamenu-font-size);
+  color: var(--navx-megamenu-color);
+  background: var(--navx-megamenu-background);
+  z-index: var(--navx-dropdown-z-index);
+}
+
+.navx-megamenu-container {
+  padding: var(--navx-megamenu-padding);
+}
+
+@container navx (min-width: 992px) {
+  .navx-megamenu {
+    position: absolute;
+    /**
+     * The full-bleed position legacy got from JavaScript.
+     *
+     * `fixSubmenuRightPositionAll()` measured every submenu on every resize
+     * and wrote `style.right = 0` when one would overflow — a forced
+     * synchronous reflow per submenu, unthrottled (audit defect #8). For a
+     * 100%-wide mega-menu that resolved to a full-bleed panel. Without it the
+     * panel sits at its static position under the trigger and paints over the
+     * menu items to its inline end.
+     *
+     * `inset-inline-start: 0` is that whole function, and it flips for RTL.
+     * The block offset is named for the same reason as the dropdown's above:
+     * legacy relied on flow position, which is not stable under a flex
+     * ancestor.
+     */
+    inset-block-start: 100%;
+    inset-inline-start: 0;
+    opacity: 0;
+    border-block-start: 0 solid transparent;
+    box-shadow: inset 0 1px 0 var(--navx-border), var(--navx-dropdown-shadow);
+    transition: opacity var(--navx-motion-duration-color) linear;
+  }
+  .navx-megamenu[data-navx-width="half"] {
+    inline-size: 50%;
+  }
+  .navx-megamenu[data-navx-width="quarter"] {
+    inline-size: 25%;
+  }
+}
+
+/* Bootstrap-grid escape hatch, kept because NAVX's whole value is dropping
+   into someone else's design system. */
+.navx-megamenu [class*="container"] {
+  inline-size: 100%;
+}
+.navx-megamenu [class*="container"] [class*="col-"] {
+  padding: 0;
+}
+
+/* ── grid ──────────────────────────────────────────────────────────────── */
+
+.navx-row {
+  display: flex;
+  flex-wrap: wrap;
+  inline-size: 100%;
+}
+
+.navx-row > [class*="navx-col"] {
+  inline-size: 100%;
+  min-block-size: 20px;
+  margin-block-end: 1rem;
+  position: relative;
+}
+
+.navx-row:last-of-type [class*="navx-col"]:last-child {
+  margin-block-end: 0;
+}
+
+@container navx (min-width: 992px) {
+  .navx-row .navx-col {
+    flex: 1 1 0;
+    max-inline-size: 100%;
+  }
+  .navx-row:last-of-type [class*="navx-col"] {
+    margin-block-end: 0;
+  }
+  .navx-col-1 {
+    flex: 0 0 8.333333%;
+    max-inline-size: 8.333333%;
+  }
+  .navx-col-2 {
+    flex: 0 0 16.666666%;
+    max-inline-size: 16.666666%;
+  }
+  .navx-col-3 {
+    flex: 0 0 25%;
+    max-inline-size: 25%;
+  }
+  .navx-col-4 {
+    flex: 0 0 33.333333%;
+    max-inline-size: 33.333333%;
+  }
+  .navx-col-5 {
+    flex: 0 0 41.666667%;
+    max-inline-size: 41.666666%;
+  }
+  .navx-col-6 {
+    flex: 0 0 50%;
+    max-inline-size: 50%;
+  }
+  .navx-col-7 {
+    flex: 0 0 58.333333%;
+    max-inline-size: 58.333333%;
+  }
+  .navx-col-8 {
+    flex: 0 0 66.666666%;
+    max-inline-size: 66.666666%;
+  }
+  .navx-col-9 {
+    flex: 0 0 75%;
+    max-inline-size: 75%;
+  }
+  .navx-col-10 {
+    flex: 0 0 83.333333%;
+    max-inline-size: 83.333333%;
+  }
+  .navx-col-11 {
+    flex: 0 0 91.666666%;
+    max-inline-size: 91.666666%;
+  }
+  .navx-col-12 {
+    flex: 0 0 100%;
+    max-inline-size: 100%;
+  }
+}
+
+/* ── mega-menu lists ───────────────────────────────────────────────────── */
+
+.navx-list {
+  inline-size: 100%;
+}
+
+.navx-list > li {
+  inline-size: 100%;
+}
+
+.navx-list > li > a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: var(--navx-size-6) var(--navx-size-15);
+  font-size: var(--navx-dropdown-link-font-size);
+  color: var(--navx-text);
+  transition: color var(--navx-motion-duration-color), background var(--navx-motion-duration-color);
+}
+
+.navx-list > li > a:hover {
+  color: var(--navx-text-accent);
+  background: var(--navx-surface-active);
+}
+
+/* A rotated triangle as the bullet, absolutely placed in the link's inline
+   start padding. `scale: -1 1` in RTL mirrors it rather than rotating it, so
+   it points along the reading direction instead of back against it. */
+.navx-list > li:not(.navx-list-heading) > a::before {
+  content: "\25E5";
+  position: absolute;
+  inset-inline-start: var(--navx-size-7);
+  font-size: 9px;
+  rotate: 45deg;
+}
+
+.navx-list > li:not(.navx-list-heading) > a:dir(rtl)::before {
+  scale: -1 1;
+}
+
+/**
+ * Section headings.
+ *
+ * Legacy needed three `!important`s here to beat the generic list-link rules,
+ * because `.navigation-list-heading > a` is *less* specific than
+ * `.navigation-list > li > a`. Selecting through the list instead makes the
+ * heading legitimately more specific and the cascade does the rest — this is
+ * three of the eighteen `!important`s, retired by arithmetic rather than by a
+ * layer trick.
+ */
+.navx-list > li.navx-list-heading {
+  font-weight: var(--navx-font-weight-bold);
+  text-transform: uppercase;
+}
+
+.navx-list > li.navx-list-heading > a {
+  padding: 0 var(--navx-size-10) var(--navx-size-8);
+}
+
+.navx-list > li.navx-list-heading > a:hover {
+  color: var(--navx-text);
+  background: transparent;
+}
+
+@container navx (min-width: 992px) {
+  .navx-list > li > a {
+    border-inline-end: 1px solid var(--navx-border);
+  }
+  [class*="navx-col"]:last-of-type .navx-list,
+  [class*="navx-col"]:last-of-type .navx-list > li > a {
+    padding-inline-end: 0;
+    border-inline-end: none;
+  }
+}
+
+/* ── tabs ──────────────────────────────────────────────────────────────── */
+
+/* Panel mode stacks; bar mode is a 20/80 split with the nav strip at the
+   inline start. The `::after` is legacy's trick for painting the pane's
+   background across the full block height even when the pane is shorter. */
+.navx-tabs {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  background: var(--navx-tabs-background);
+  box-shadow: var(--navx-tabs-shadow);
+}
+
+@container navx (min-width: 992px) {
+  .navx-tabs::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    inline-size: 80%;
+    background: var(--navx-tabs-background-active);
+    z-index: 99;
+  }
+}
+
+.navx-tabs-nav {
+  inline-size: 100%;
+}
+
+@container navx (min-width: 992px) {
+  .navx-tabs-nav {
+    float: inline-start;
+    inline-size: 20%;
+  }
+}
+
+.navx-tabs-nav-item > a {
+  display: block;
+  inline-size: 100%;
+  padding: var(--navx-size-10) var(--navx-size-10);
+  font-size: var(--navx-link-font-size);
+  color: var(--navx-tabs-color);
+  background: var(--navx-tabs-background);
+  outline: 0;
+  transition: background var(--navx-motion-duration-color);
+}
+
+.navx-tabs-nav-item[data-navx-current] > a,
+.navx-tabs-nav-item:hover > a,
+.navx-tabs-nav-item:active > a {
+  background: var(--navx-tabs-background-active);
+}
+
+.navx-tabs-pane {
+  position: relative;
+  display: none;
+  inline-size: 100%;
+  min-block-size: var(--navx-size-15);
+  padding: var(--navx-size-10);
+  font-size: 15px;
+  color: var(--navx-tabs-color);
+  background: var(--navx-tabs-background-active);
+  opacity: 0;
+  z-index: 100;
+  transition: opacity var(--navx-motion-duration-color);
+}
+
+.navx-tabs-pane[data-navx-current] {
+  display: block;
+  opacity: 1;
+}
+
+@container navx (min-width: 992px) {
+  .navx-tabs-pane {
+    float: inline-end;
+    inline-size: 80%;
+  }
+}
+
+/* ── badge ─────────────────────────────────────────────────────────────── */
+
+.navx-badge {
+  display: inline-block;
+  min-inline-size: var(--navx-badge-min-inline-size);
+  block-size: var(--navx-badge-block-size);
+  margin-inline: var(--navx-size-3);
+  font-size: var(--navx-badge-font-size);
+  line-height: var(--navx-badge-block-size);
+  text-align: center;
+  color: var(--navx-badge-color);
+  background: var(--navx-badge-background);
+  border-radius: var(--navx-badge-radius);
+}
+
+@container navx (min-width: 992px) {
+  .navx-link .navx-badge {
+    position: absolute;
+    inset-inline-end: -2px;
+    inset-block-start: calc(50% - 20px);
+  }
+  .navx-submenu-link .navx-badge {
+    position: static;
+  }
+}
+
+/* ── button ────────────────────────────────────────────────────────────── */
+
+.navx-btn {
+  display: block;
+  inline-size: 100%;
+  padding: var(--navx-button-padding-block) var(--navx-button-padding-inline);
+  font-size: var(--navx-link-font-size);
+  line-height: var(--navx-font-line-height-tight);
+  text-align: center;
+  white-space: nowrap;
+  color: var(--navx-button-color);
+  background: var(--navx-button-background);
+  border: 1px solid var(--navx-button-background);
+  border-radius: var(--navx-button-radius);
+  cursor: pointer;
+  transition: background var(--navx-motion-duration-color);
+}
+
+.navx-btn:hover,
+.navx-btn:focus {
+  color: var(--navx-button-color);
+  background: var(--navx-button-background-hover);
+}
+
+@container navx (min-width: 992px) {
+  .navx-btn {
+    inline-size: auto;
+  }
+}
+
+/* ── inline form ───────────────────────────────────────────────────────── */
+
+.navx-form {
+  position: relative;
+}
+
+@container navx (min-width: 992px) {
+  .navx-form {
+    display: flex;
+  }
+}
+
+/* Context in `:where()` so the rule stays at one class — see
+   tools/assert-utilities.mjs; a search button must still be hideable. */
+:where(.navx-form) .navx-btn {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: var(--navx-size-2);
+  display: flex;
+  inline-size: auto;
+  block-size: 100%;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.navx-input {
+  inline-size: 100%;
+  padding-block: 11px;
+  padding-inline: var(--navx-size-7) var(--navx-size-16);
+  font-size: var(--navx-link-font-size);
+  line-height: var(--navx-font-line-height-tight);
+  color: var(--navx-input-color);
+  background: var(--navx-input-background);
+  border: 1px solid var(--navx-input-border-color);
+  border-radius: var(--navx-input-radius);
+  outline-width: 0;
+  transition: border var(--navx-motion-duration-color);
+}
+
+.navx-input:hover,
+.navx-input:focus {
+  border-color: var(--navx-input-border-color-hover);
+}
+
+.navx-input::placeholder {
+  color: var(--navx-input-placeholder);
+}
+
+.navx-search-icon {
+  position: relative;
+  display: inline-block;
+  inline-size: 14px;
+  block-size: 14px;
+  vertical-align: middle;
+  text-indent: -9999px;
+  color: var(--navx-input-icon-color);
+  border: 2px solid;
+  border-radius: var(--navx-radius-full);
+  rotate: -45deg;
+  transition: color var(--navx-motion-duration-color);
+}
+
+.navx-search-icon::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-start: 50%;
+  inline-size: 2px;
+  block-size: 7px;
+  translate: -50% 0;
+  border-radius: 0 0 1px 1px;
+  box-shadow: inset 0 0 0 32px;
+  pointer-events: none;
+}
+
+.navx-btn:hover .navx-search-icon {
+  color: var(--navx-accent);
+}
+
+/* ── brand, logo, toggler, text ────────────────────────────────────────── */
+
+.navx-brand > a {
+  font-size: var(--navx-brand-font-size);
+  font-weight: var(--navx-brand-font-weight);
+  color: var(--navx-brand-color);
+}
+
+.navx-header .navx-brand {
+  padding-inline: 1rem;
+}
+
+@container navx (min-width: 992px) {
+  .navx-brand > a {
+    font-size: var(--navx-brand-font-size-bar);
+  }
+}
+
+/* `:where(a)` keeps this at one class, so the visibility utilities can still
+   hide a logo link on order alone. Legacy's `.navigation-logo a` was (0,1,1)
+   and that is exactly why `.hide-on-portrait` needed `display: none !important`
+   to work on a logo. */
+.navx-logo,
+.navx-logo > :where(a) {
+  display: flex;
+  align-items: center;
+}
+
+.navx-logo img {
+  display: block;
+  block-size: var(--navx-logo-block-size);
+}
+
+.navx-header .navx-logo {
+  padding-inline: 1rem;
+}
+
+@container navx (min-width: 992px) {
+  .navx-logo img {
+    block-size: var(--navx-logo-block-size-bar);
+  }
+}
+
+.navx-toggler {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--navx-toggler-size);
+  block-size: var(--navx-toggler-size);
+  cursor: pointer;
+}
+
+.navx-toggler-icon {
+  display: inline-block;
+  inline-size: 20px;
+  block-size: 2px;
+  font-style: normal;
+  color: var(--navx-toggler-color);
+  box-shadow: inset 0 0 0 32px, 0 -6px, 0 6px;
+}
+
+.navx-text {
+  display: inline-block;
+  padding-block: 11px;
+  font-size: var(--navx-link-font-size);
+  color: var(--navx-text);
+}
+
+@container navx (min-width: 992px) {
+  .navx-text {
+    padding-inline: var(--navx-size-10);
+  }
+}
+
+/* ── social, icon item, avatar ─────────────────────────────────────────── */
+
+.navx-social {
+  display: flex;
+  /* A social row stays a row in panel mode, where `.navx-menu` is a column.
+     Legacy got this for free because its items stacked via `width: 100%`
+     rather than a flex direction, and the social items opted out with
+     `width: auto`. */
+  flex-direction: row;
+  justify-content: center;
+  inline-size: 100%;
+  padding: var(--navx-size-10);
+  text-align: center;
+}
+
+@container navx (min-width: 992px) {
+  .navx-social {
+    inline-size: auto;
+    padding: 0 var(--navx-size-10);
+  }
+}
+
+/* `:where()` on the context keeps this at one class so a visibility utility on
+   a social item still wins by order — tools/assert-utilities.mjs checks it. */
+:where(.navx-social) .navx-item {
+  display: flex;
+  inline-size: auto;
+}
+
+.navx-social .navx-link {
+  margin: 0;
+  padding: 0 var(--navx-size-3);
+  border: none;
+}
+
+.navx-social .navx-item:first-child .navx-link {
+  padding-inline-start: 0;
+}
+.navx-social .navx-item:last-child .navx-link {
+  padding-inline-end: 0;
+}
+
+.navx-social .navx-link i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--navx-social-icon-size);
+  block-size: var(--navx-social-icon-size);
+  margin: 0;
+  font-size: 19px;
+  line-height: 1;
+  background: var(--navx-social-icon-background);
+  border-radius: var(--navx-social-icon-radius);
+}
+
+.navx-item[data-navx-item="icon"] > .navx-link {
+  padding: var(--navx-link-padding-block) var(--navx-link-padding-inline);
+}
+
+@container navx (min-width: 992px) {
+  .navx-item[data-navx-item="icon"] > .navx-link {
+    inline-size: 100%;
+    margin: 0;
+    padding: 25px var(--navx-font-size-icon-lg);
+    border-inline-start: 1px solid var(--navx-link-border-color);
+  }
+  .navx-item[data-navx-item="icon"] > .navx-link span:not(.navx-chevron, .navx-badge) {
+    display: none;
+  }
+  .navx-item[data-navx-item="icon"] > .navx-link .navx-badge {
+    inset-inline-end: var(--navx-size-6);
+  }
+  .navx-item[data-navx-item="icon"] > .navx-link i {
+    inline-size: var(--navx-size-12);
+    block-size: 26px;
+    margin: 0;
+    font-size: var(--navx-font-size-icon-lg);
+    line-height: 26px;
+    text-align: center;
+  }
+  .navx-item[data-navx-item="icon"] > .navx-link i[class*="fa"] {
+    inline-size: auto;
+    font-size: var(--navx-font-size-icon);
+  }
+}
+
+.navx-item[data-navx-item="avatar"] > .navx-link {
+  font-size: var(--navx-font-size-xs);
+  font-weight: var(--navx-font-weight-bold);
+}
+
+.navx-item[data-navx-item="avatar"] img {
+  inline-size: var(--navx-size-17);
+  border: 2px solid var(--navx-accent);
+  border-radius: var(--navx-radius-full);
+}
+
+.navx-item[data-navx-item="avatar"] span {
+  margin-inline-start: var(--navx-size-5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VARIANTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.navx[data-navx-position="fixed"] {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: var(--navx-nav-z-index);
+}
+
+.navx[data-navx-position="sticky"] {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--navx-nav-z-index);
+}
+
+@container navx (min-width: 992px) {
+  .navx[data-navx-align="between"] .navx-panel {
+    justify-content: space-between;
+  }
+  .navx[data-navx-align="center"] .navx-panel {
+    justify-content: center;
+  }
+  .navx[data-navx-align="center"] .navx-panel-header {
+    padding: 0;
+  }
+  .navx[data-navx-logo="top"] .navx-panel {
+    flex-direction: column;
+  }
+  .navx[data-navx-logo="top"] .navx-panel-header {
+    padding-block-start: var(--navx-size-12);
+  }
+  .navx[data-navx-logo="top"] .navx-menu {
+    justify-content: center;
+  }
+}
+
+/* Deliberately outside the container query: a logo-top layout shows its logo
+   at natural size in both modes, and legacy's equivalent rule is unconditional
+   too. Scoping it to bar mode shrank the drawer's logo to the 40px panel size
+   and moved everything below it up 8px. */
+.navx[data-navx-logo="top"] .navx-panel .navx-logo img {
+  inline-size: auto;
+  block-size: auto;
+}
+
+/* Transparent — a theme expressed as token overrides, not a stylesheet.
+   Legacy spent 7 variables and ~40 declarations on this. */
+.navx[data-navx-transparent] {
+  --navx-nav-background: transparent;
+  --navx-brand-color: var(--navx-color-gray-0);
+  --navx-toggler-color: var(--navx-color-gray-0);
+  --navx-chevron-color: var(--navx-color-gray-0);
+  --navx-chevron-color-hover: var(--navx-color-gray-0);
+}
+
+@container navx (min-width: 992px) {
+  .navx[data-navx-transparent] {
+    --navx-link-color: var(--navx-color-gray-0);
+    --navx-link-color-hover: var(--navx-color-gray-0);
+    --navx-input-color: var(--navx-color-gray-0);
+    --navx-input-background: var(--navx-color-alpha-white-01);
+    --navx-input-border-color: var(--navx-color-alpha-white-05);
+    --navx-input-placeholder: var(--navx-color-alpha-white-20);
+    --navx-social-icon-background: var(--navx-color-alpha-white-05);
+  }
+  .navx[data-navx-transparent] .navx-item:where([data-navx-item="icon"]) > .navx-link {
+    border-inline-start: none;
+  }
+}
+
+/* Full-screen panel. */
+@container navx (max-width: 991px) {
+  .navx[data-navx-fullscreen] .navx-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    inline-size: 100%;
+  }
+  .navx[data-navx-fullscreen] .navx-panel-header {
+    padding: 0;
+    border: none;
+  }
+  .navx[data-navx-fullscreen] .navx-panel-header .navx-panel-close,
+  .navx[data-navx-fullscreen] .navx-panel-header .navx-brand,
+  .navx[data-navx-fullscreen] .navx-panel-header .navx-logo {
+    position: absolute;
+    inset-block-start: var(--navx-size-12);
+  }
+  .navx[data-navx-fullscreen] .navx-panel-header .navx-panel-close {
+    inset-inline-end: var(--navx-size-12);
+  }
+  .navx[data-navx-fullscreen] .navx-panel-header .navx-brand,
+  .navx[data-navx-fullscreen] .navx-panel-header .navx-logo {
+    inset-inline-start: var(--navx-size-12);
+  }
+  .navx[data-navx-fullscreen] .navx-menu {
+    inline-size: 300px;
+  }
+  .navx[data-navx-fullscreen] .navx-link,
+  .navx[data-navx-fullscreen] .navx-submenu-link {
+    border: none;
+  }
+  .navx[data-navx-fullscreen] .navx-link {
+    justify-content: center;
+  }
+  .navx[data-navx-fullscreen] .navx-submenu-link {
+    text-align: center;
+  }
+  .navx[data-navx-fullscreen] .navx-btn {
+    inline-size: 300px;
+    align-self: center;
+  }
+  .navx[data-navx-fullscreen] .navx-form {
+    inline-size: 300px;
+    margin: auto;
+  }
+  .navx[data-navx-fullscreen] .navx-form .navx-btn {
+    inline-size: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.navx-panel[data-navx-state="open"] {
+  inset-inline-start: 0;
+}
+
+.navx-overlay[data-navx-state="open"] {
+  inline-size: 100%;
+  block-size: 100%;
+  opacity: 1;
+  z-index: var(--navx-overlay-z-index);
+}
+
+@container navx (min-width: 992px) {
+  .navx-overlay[data-navx-state="open"] {
+    display: none;
+  }
+}
+
+/**
+ * Open submenus.
+ *
+ * Panel mode animates height. Legacy faked it with `max-height: 0 → 2500px`
+ * and a `cubic-bezier(0,1,0,1)` curve chosen to disguise the fact that the
+ * declared duration was a lie — and it clipped outright on menus taller than
+ * the magic number. `interpolate-size` animates to the real height with no
+ * magic number, and the grid fallback covers browsers without it.
+ */
+.navx-submenu[data-navx-state="open"],
+.navx-megamenu[data-navx-state="open"] {
+  max-block-size: none;
+  overflow: visible;
+}
+
+.navx-megamenu[data-navx-state="open"] {
+  border-block-end: 1px solid var(--navx-megamenu-border-color);
+}
+
+@container navx (min-width: 992px) {
+  .navx-submenu[data-navx-state="open"],
+  .navx-megamenu[data-navx-state="open"] {
+    opacity: 1;
+    overflow: visible;
+  }
+  .navx-megamenu[data-navx-state="open"] {
+    border-block-end: none;
+  }
+}
+
+/**
+ * Only a top-level chevron flips when its menu opens.
+ *
+ * Scoped to `.navx-link >` on purpose. A submenu's own chevron points along the
+ * inline axis to say "this opens beside me", and that stays true whether the
+ * child menu is open or shut — an unscoped `.navx-chevron[data-navx-state]`
+ * rule outranks the submenu's rotation by source order and turns every open
+ * nested arrow downward.
+ */
+.navx-link > .navx-chevron[data-navx-state="open"]::after {
+  rotate: var(--navx-chevron-rotation-block-open);
+}
+
+@container navx (min-width: 992px) {
+  .navx-link > .navx-chevron[data-navx-state="open"]::after {
+    rotate: var(--navx-chevron-rotation-block);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITIES — last on purpose, so a single class still wins
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Mode-scoped visibility.
+ *
+ * Legacy called these `.hide-on-landscape` and `.hide-on-portrait` and spent
+ * two `!important`s on them, which it genuinely needed: a one-class utility
+ * cannot beat `.navigation-social-menu .navigation-item { display: inline-block }`
+ * on specificity alone. Declaring them last is the whole fix.
+ *
+ * Named for the mode, not the device orientation — a NAVX in a 320px sidebar on
+ * a landscape tablet is in panel mode, so "portrait" would be a lie. The
+ * container query decides, and the names follow it.
+ */
+@container navx (max-width: 991px) {
+  .navx-hide-in-panel {
+    display: none;
+  }
+}
+
+@container navx (min-width: 992px) {
+  .navx-hide-in-bar {
+    display: none;
+  }
+}
+
+/* A gap above a stacked menu, collapsing once the bar lays out horizontally.
+   Legacy's `.margin-top`, minus its two `!important`s. */
+.navx-spaced {
+  margin-block-start: 1rem;
+}
+
+@container navx (min-width: 992px) {
+  .navx-spaced {
+    margin-block-start: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROGRESSIVE ENHANCEMENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Real height animation where supported; the max-block-size fallback above
+   still works everywhere else. Baseline 2024 per the Stage 1 decision. */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+
+  .navx-submenu,
+  .navx-megamenu {
+    max-block-size: 0;
+    transition: max-block-size var(--navx-motion-duration-submenu) var(--navx-motion-easing-default);
+  }
+  .navx-submenu[data-navx-state="open"],
+  .navx-megamenu[data-navx-state="open"] {
+    max-block-size: max-content;
+  }
+}
+
+/* No reduced-motion block here on purpose. @navx/tokens already redefines
+   --navx-motion-duration-* to 1ms under `prefers-reduced-motion: reduce`, and
+   every transition below reads those tokens. Restating it here would need
+   `!important` to beat the author transitions — which is precisely the thing
+   this stylesheet is meant not to contain. */
+
+/* High-contrast / forced-colors: let the OS palette through rather than
+   fighting it, and keep the decoration element from painting over text. */
+@media (forced-colors: active) {
+  .navx-link::after {
+    display: none;
+  }
+  .navx-chevron::after {
+    border-color: transparent CanvasText CanvasText transparent;
+  }
+}

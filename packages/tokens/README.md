@@ -1,7 +1,7 @@
 # @navx/tokens
 
 The theming layer. Three tiers of CSS custom properties, a dark theme, RTL, and
-all ten legacy skins — 2.24 kB gzipped.
+all ten legacy skins — 2.3 kB gzipped.
 
 ```bash
 npm i @navx/tokens
@@ -19,7 +19,7 @@ stylesheets totalling 213 declarations, an entire colour-generator mini-app buil
 to work around the lack of runtime theming, and a dark mode that was impossible
 without recompiling Sass.
 
-All of that collapses into 190 tokens and 107 lines of skin overlay.
+All of that collapses into 201 tokens and 112 lines of skin overlay.
 
 ## The three tiers
 

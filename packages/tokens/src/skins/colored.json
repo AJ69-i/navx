@@ -4,6 +4,7 @@
     "color-hover": { "$type": "color", "$value": "{text.on-accent}" },
     "decoration": {
       "background": { "$type": "color", "$value": "{accent.default}" },
+      "background-icon": { "$type": "color", "$value": "{accent.default}" },
       "inline-size": { "$type": "dimension", "$value": "100%" },
       "block-size": { "$type": "dimension", "$value": "100%" }
     }

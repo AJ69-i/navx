@@ -1,8 +1,9 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 // Shared with the extractor, the server and the spec, so a bare
 // `npx playwright test` resolves .env and the legacy root identically to
 // `npm run extract` — no exported variables, no drift between entry points.
 import { harnessPort } from './tools/env.mjs';
+import { PROJECTS } from './tools/projects.mjs';
 
 const PORT = harnessPort();
 
@@ -55,30 +56,12 @@ export default defineConfig({
     video: 'off',
   },
 
-  projects: [
-    {
-      name: 'desktop',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1440, height: 900 },
-        deviceScaleFactor: 1,
-      },
-    },
-    {
-      name: 'tablet',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 768, height: 1024 },
-        deviceScaleFactor: 1,
-      },
-    },
-    {
-      name: 'mobile',
-      // A real phone UA plus touch, because navigationMode() branches on both
-      // navigator.userAgent and maxTouchPoints (audit defect #6).
-      use: { ...devices['Pixel 7'], deviceScaleFactor: 1 },
-    },
-  ],
+  // Shared with tools/compare-stage2.mjs, so Stage 2 renders under exactly the
+  // conditions that produced the baseline it is diffed against.
+  projects: PROJECTS.map(({ name, device }) => ({
+    name,
+    use: { ...device, deviceScaleFactor: 1 },
+  })),
 
   webServer: {
     command: 'node tools/serve.mjs',

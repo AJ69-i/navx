@@ -3,6 +3,7 @@
   "link": {
     "decoration": {
       "background": { "$type": "color", "$value": "{accent.default}" },
+      "background-icon": { "$type": "color", "$value": "{accent.default}" },
       "inline-size": { "$type": "dimension", "$value": "{size.3}" },
       "block-size": { "$type": "dimension", "$value": "{size.3}" },
       "inset-block": { "$type": "dimension", "$value": "70%" },

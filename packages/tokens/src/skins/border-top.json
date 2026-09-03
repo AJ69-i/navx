@@ -5,6 +5,6 @@
       "block-start-width": { "$type": "dimension", "$value": "3px" },
       "color-active": { "$type": "color", "$value": "{accent.default}" }
     },
-    "padding-block-bar": { "$type": "dimension", "$value": "7px" }
+    "padding-block-start-bar": { "$type": "dimension", "$value": "7px" }
   }
 }

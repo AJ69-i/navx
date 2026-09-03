@@ -49,6 +49,19 @@
           "suspicious": { "noExplicitAny": "off" }
         }
       }
+    },
+    {
+      // `interpolate-size` is newer than Biome's property list, so it reads as
+      // a typo. It is the whole point of the progressive-enhancement block and
+      // is guarded by `@supports (interpolate-size: allow-keywords)`, which
+      // means an engine that does not know it never applies it either. Scoped
+      // to the one file so a genuine typo elsewhere still fails the build.
+      "include": ["packages/styles/src/navx.css"],
+      "linter": {
+        "rules": {
+          "correctness": { "noUnknownProperty": "off" }
+        }
+      }
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "@navx/styles",
   "version": "0.0.0",
-  "description": "Stage 2 \u2014 the stylesheet, rebuilt on tokens with logical properties and cascade layers.",
+  "description": "The NAVX stylesheet \u2014 logical properties, container queries, zero !important. Assign your own @layer at import time.",
   "license": "MIT",
   "type": "module",
   "sideEffects": ["*.css"],
@@ -17,21 +17,26 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./package.json": "./package.json"
+    "./navx.css": "./dist/navx.css",
+    "./package.json": "./package.json",
+    "./navx.min.css": "./dist/navx.min.css",
+    "./navx.layer.css": "./dist/navx.layer.css",
+    "./navx.layer.min.css": "./dist/navx.layer.min.css"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup && node ../../scripts/emit-types.mjs",
+    "build": "node build.mjs && tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
     "test": "echo \"no tests yet\"",
     "publint": "publint",
-    "attw": "attw --pack ."
+    "attw": "attw --pack . --exclude-entrypoints navx.css navx.min.css navx.layer.css navx.layer.min.css"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@types/node": "catalog:",
+    "lightningcss": "1.29.1",
     "publint": "0.2.12",
     "tsup": "catalog:",
     "typescript": "catalog:"
@@ -44,5 +49,8 @@
     "type": "git",
     "url": "git+https://github.com/trio-telecom/navx.git",
     "directory": "packages/styles"
+  },
+  "dependencies": {
+    "@navx/tokens": "workspace:*"
   }
 }

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAVX Stage 2 harness</title>
+
+<!-- Bootstrap and Font Awesome are loaded exactly as the Stage 0 harness loads
+     them, so the only variable between the two runs is the NAVX stylesheet. -->
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/bootstrap.min.css">
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/all.css">
+
+<!-- The new stack. Tokens first, then the stylesheet that reads them. -->
+<link rel="stylesheet" href="/navx/tokens.css">
+<link rel="stylesheet" href="/navx/navx.css">
+
+<style>
+  /* Identical determinism shims to the Stage 0 harness. Nothing here may touch
+     .navx styling, or the comparison measures the shim instead of the CSS. */
+  html { overflow: hidden; }
+  body {
+    margin: 0;
+    background: #ffffff;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  #filler { height: 1400px; background: #ffffff; }
+</style>
+</head>
+<body>
+
+<div id="mount"></div>
+<div id="filler"></div>
+
+<script type="module">
+import { CLASS_MAP, ATTR_MAP, DROPPED, transformInPage } from '/harness-tools/transform-legacy.mjs';
+
+/**
+ * Mounts a Stage 0 fixture, rewrites it to the new API, and puts it into the
+ * requested state — the same states the Stage 0 spec captured, driven by data
+ * attributes instead of the legacy plugin.
+ *
+ * Query params: id, state (rest|panel-open|submenu-open|submenu-nested),
+ *               skin, dir.
+ */
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const state = params.get('state') || 'rest';
+  const skin = params.get('skin');
+  const dir = params.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+  const root = document.documentElement;
+
+  root.dir = dir;
+  root.lang = dir === 'rtl' ? 'ar' : 'en';
+
+  const fail = (msg) => {
+    root.setAttribute('data-navx-error', msg);
+    root.setAttribute('data-navx-ready', '1');
+  };
+
+  if (!id) return fail('missing id param');
+
+  if (skin) {
+    root.setAttribute('data-navx-skin', skin);
+    await new Promise((resolve) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `/navx/skins/${skin}.css`;
+      link.onload = link.onerror = resolve;
+      document.head.appendChild(link);
+    });
+  }
+
+  let html;
+  try {
+    const res = await fetch(`/fixtures/${id}.html`);
+    if (!res.ok) throw new Error(`fixture ${id} → ${res.status}`);
+    html = await res.text();
+  } catch (err) {
+    return fail(String(err.message || err));
+  }
+
+  document.getElementById('mount').innerHTML = html;
+  const nav = document.querySelector('.navigation, .navx');
+  if (!nav) return fail('fixture contained no nav root');
+
+  const report = transformInPage(nav, {
+    classMap: CLASS_MAP,
+    attrMap: ATTR_MAP,
+    dropped: DROPPED,
+  });
+  if (!report.renamed) return fail('transform renamed nothing');
+  if (report.unmapped.length) {
+    root.setAttribute('data-navx-unmapped', report.unmapped.join(','));
+  }
+
+  // Parts the legacy plugin injected at runtime, which Stage 3's core will own.
+  // Created here so the CSS has the same DOM to style as legacy did.
+  const SUBMENU = '.navx-submenu, .navx-megamenu';
+  for (const submenu of nav.querySelectorAll(SUBMENU)) {
+    const trigger = submenu.previousElementSibling;
+    if (!trigger || trigger.querySelector(':scope > .navx-chevron')) continue;
+    const chevron = document.createElement('span');
+    chevron.className = 'navx-chevron';
+    trigger.appendChild(chevron);
+  }
+
+  if (!nav.querySelector('.navx-overlay')) {
+    const overlay = document.createElement('div');
+    overlay.className = 'navx-overlay';
+    nav.appendChild(overlay);
+  }
+
+  // ── states ────────────────────────────────────────────────────────────────
+  const open = (el) => el && el.setAttribute('data-navx-state', 'open');
+
+  const openPanel = () => {
+    open(nav.querySelector('.navx-panel'));
+    open(nav.querySelector('.navx-overlay'));
+  };
+
+  /** Open one submenu chain. `deep` targets the most deeply nested one. */
+  const openSubmenu = (deep) => {
+    const all = [...nav.querySelectorAll(SUBMENU)];
+    if (!all.length) return 0;
+
+    const chainTo = (leaf) => {
+      const chain = [];
+      for (let el = leaf; el && el !== nav; el = el.parentElement) {
+        if (el.matches(SUBMENU)) chain.unshift(el);
+      }
+      return chain;
+    };
+
+    const first = all[0];
+    const target = deep
+      ? all.reduce((best, s) => (chainTo(s).length > chainTo(best).length ? s : best), first)
+      : all.find((s) => chainTo(s).length === 1) ?? first;
+
+    const chain = chainTo(target);
+    for (const submenu of chain) {
+      open(submenu);
+      const trigger = submenu.previousElementSibling;
+      const item = submenu.parentElement;
+      if (item) item.setAttribute('data-navx-current', '');
+      if (trigger) open(trigger.querySelector(':scope > .navx-chevron'));
+    }
+    return chain.length;
+  };
+
+  // `panel=1` mirrors the Stage 0 spec, which opens the off-canvas panel before
+  // opening a submenu on mobile — a submenu inside a closed drawer is not a
+  // state worth capturing. The caller passes it rather than the harness
+  // guessing from its own width, so the two runs cannot disagree.
+  let depth = 0;
+  if (state === 'panel-open' || params.get('panel') === '1') openPanel();
+  if (state === 'submenu-open') depth = openSubmenu(false);
+  if (state === 'submenu-nested') depth = openSubmenu(true);
+  root.setAttribute('data-navx-depth-opened', String(depth));
+
+  await Promise.all([...document.images].map((img) =>
+    img.complete ? Promise.resolve() : new Promise((r) => { img.onload = img.onerror = r; })
+  ));
+  if (document.fonts?.ready) await document.fonts.ready;
+
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  root.setAttribute('data-navx-ready', '1');
+})();
+</script>
+</body>
+</html>

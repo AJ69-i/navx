@@ -10,8 +10,8 @@ MIT. In active development — see the roadmap below for what exists today.
 
 | package | stage | state |
 |---|---|---|
-| [`@navx/tokens`](packages/tokens) | 1 | **shipping** — 190 tokens, dark theme, RTL, ten skins, 2.24 kB gzipped |
-| [`@navx/styles`](packages/styles) | 2 | scaffold |
+| [`@navx/tokens`](packages/tokens) | 1 | **shipping** — 201 tokens, dark theme, RTL, ten skins, 2.3 kB gzipped |
+| [`@navx/styles`](packages/styles) | 2 | **shipping** — 4.1 kB gzipped, zero `!important`, zero physical-direction properties |
 | [`@navx/core`](packages/core) | 3 | scaffold |
 | [`@navx/react`](packages/react) · [`vue`](packages/vue) · [`svelte`](packages/svelte) · [`angular`](packages/angular) · [`element`](packages/element) | 4 | scaffold |
 | [`@navx/presets`](packages/presets) | 5 | scaffold |
@@ -58,7 +58,9 @@ variants extracted, 292 asserted screenshots per platform across three viewports
 and 112 RTL reference renders.
 
 ```bash
-pnpm --filter @navx/baseline-harness run baseline:check
+pnpm --filter @navx/baseline-harness run baseline:check   # legacy still renders as approved
+pnpm --filter @navx/baseline-harness run stage2           # the new stylesheet against those approvals
+pnpm --filter @navx/baseline-harness run stage2:rtl       # the four RTL checks, legacy vs new
 ```
 
 It reads the legacy tree at runtime from `NAVX_LEGACY_ROOT`, auto-detected as the
@@ -74,18 +76,36 @@ absent, so outside contributors still get a green CI.
 |---|---|---|
 | 0 | Baselines and safety net | ✅ done |
 | 1 | Monorepo, build, CI, tokens | ✅ done |
-| 2 | The stylesheet — logical properties, cascade layers, container queries | next |
-| 3 | Headless core — state machine, ARIA, keyboard, `destroy()` | |
+| 2 | The stylesheet — logical properties, container queries, ten skins as tokens | ✅ done |
+| 3 | Headless core — state machine, ARIA, keyboard, `destroy()` | next |
 | 4 | Adapters | |
 | 5 | Presets — the 46 catalogue variants as data | |
 | 6 | Scroll behaviours, grid mega-menu, runtime theming | |
 | 7 | Docs, migration, v1.0.0 | |
 
-### What Stage 2 inherits from Stage 1
+### Stage 2 result
 
-Four of the ten legacy skins — `boxed`, `rounded-boxed`, `mini-circle`,
-`bottom-arrow` — are *shape* variants, not colour. They are expressible as
-tokens only because tier 3 defines a `link.decoration.*` group describing one
-pseudo-element the base stylesheet must always render. **Stage 2's CSS has to
-provide that affordance**, or those four skins need stylesheets of their own and
-the token story breaks.
+The stylesheet replaces 1,477 lines of legacy CSS with 4.1 kB gzipped, and was
+validated against all 292 approved screenshots across three viewports, on both
+platforms with an approved set: **246 pixel-identical on macOS, 184 on Linux,
+none above 0.2% on either, none errored.** Every remaining difference is an
+explained improvement — the residuals, the six regressions the baselines caught,
+and the RTL numbers are all recorded in [`docs/stage2.md`](docs/stage2.md).
+
+Two decisions in there are worth flagging from here.
+
+**Cascade layers did not survive contact with a real page.** Stage 2 was
+specified with `@layer`, and layers did retire all 18 `!important`s. But
+unlayered CSS beats layered CSS at *every* specificity, and measuring that cost
+against the harness's Bootstrap 4 page found **58 NAVX declarations silently
+defeated** — including `.navx { display: flex }`, beaten by Reboot's one-type
+`nav { display: block }`. So the shipped file is unlayered with a build-enforced
+specificity ceiling, and the layer is the consumer's to assign
+(`@import url('@navx/styles/navx.css') layer(navx)`). The detector is kept as a
+regression test.
+
+**The RTL fix was not where it looked.** Logical properties put the chevron at
+the inline end correctly; Bootstrap 4's `body { text-align: left }` then kept
+the *label* pinned left, and the two collided. Legacy failed 35 chevron-side,
+18 chevron-overlap and 56 drawer-side checks in Arabic; the new stylesheet
+fails none.

@@ -132,8 +132,11 @@ async function main() {
     '',
     '/* Direction is a token, not a second stylesheet. */',
     block(':root:dir(rtl)', [
-      [`${PREFIX}-chevron-rotation`, '-135deg'],
-      [`${PREFIX}-chevron-rotation-open`, '45deg'],
+      // One declaration, and only the inline-axis arrow. The block-axis
+      // rotations stay put: a submenu that drops downward drops downward in
+      // Arabic too, and flipping those is what pointed every panel-mode
+      // chevron upward.
+      [`${PREFIX}-chevron-rotation-inline`, '135deg'],
     ]),
     '',
     '/* Arabic metrics. Latin fallbacks render Arabic with the wrong leading. */',

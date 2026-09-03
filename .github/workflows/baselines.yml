@@ -15,19 +15,12 @@ concurrency:
   group: baselines-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  typecheck:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '22', cache: npm }
-      - run: npm ci
-      - run: npx tsc --noEmit
+env:
+  NODE_VERSION: '22.22.3'
 
+jobs:
   baselines:
     runs-on: ubuntu-24.04
-    needs: typecheck
     steps:
       - uses: actions/checkout@v4
 
@@ -57,34 +50,80 @@ jobs:
           path: .baselines
 
       - if: steps.guard.outputs.ready == 'true'
+        uses: pnpm/action-setup@v4
+      - if: steps.guard.outputs.ready == 'true'
         uses: actions/setup-node@v4
-        with: { node-version: '22', cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
       - if: steps.guard.outputs.ready == 'true'
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      # The Stage 2 harness serves packages/*/dist, so it measures exactly what
+      # would ship rather than a copy that can drift from it.
+      - if: steps.guard.outputs.ready == 'true'
+        run: pnpm build
 
       # Pinned browser build. Version drift silently invalidates every snapshot,
-      # so the Playwright version in package.json is exact and this installs it.
+      # so the Playwright version in the lockfile is exact and this installs it.
       - if: steps.guard.outputs.ready == 'true'
-        run: npx playwright install --with-deps chromium
+        run: pnpm --filter @navx/baseline-harness exec playwright install --with-deps chromium
 
       - if: steps.guard.outputs.ready == 'true'
         name: Restore baselines into the working tree
         run: |
-          mkdir -p tests/__baselines__
-          cp -R .baselines/__baselines__/* tests/__baselines__/ 2>/dev/null || true
+          mkdir -p tools/baseline/tests/__baselines__
+          cp -R .baselines/__baselines__/* tools/baseline/tests/__baselines__/ 2>/dev/null || true
 
       - if: steps.guard.outputs.ready == 'true'
-        name: Extract fixtures and compare
+        name: Extract fixtures
+        env:
+          NAVX_LEGACY_ROOT: ${{ github.workspace }}/.legacy
+        run: pnpm --filter @navx/baseline-harness run extract
+
+      # Stage 0 — the legacy library still renders the way it was approved to.
+      # If this fails, the baselines are stale or the legacy checkout moved;
+      # nothing below it is meaningful until it passes.
+      - if: steps.guard.outputs.ready == 'true'
+        name: Stage 0 — legacy renders as approved
+        env:
+          NAVX_LEGACY_ROOT: ${{ github.workspace }}/.legacy
+        run: pnpm --filter @navx/baseline-harness run baseline:check
+
+      # Stage 2 — the new stylesheet against those same approvals. Fails on any
+      # render over 0.2%, which is the tolerance Stage 0 holds itself to.
+      - if: steps.guard.outputs.ready == 'true'
+        name: Stage 2 — new stylesheet vs approved baselines
         env:
           NAVX_LEGACY_ROOT: ${{ github.workspace }}/.legacy
         run: |
-          npm run extract
-          npx playwright test
+          pnpm --filter @navx/baseline-harness exec node tools/serve.mjs &
+          npx wait-on http://localhost:4317/fixtures/manifest.json
+          pnpm --filter @navx/baseline-harness run stage2
+
+      # The three properties that are cheap to lose and invisible in a
+      # screenshot: the host page must not beat the stylesheet, a one-class
+      # utility must still win with no `!important`, and RTL must stay fixed.
+      - if: steps.guard.outputs.ready == 'true'
+        name: Stage 2 — architecture gates
+        env:
+          NAVX_LEGACY_ROOT: ${{ github.workspace }}/.legacy
+        run: |
+          pnpm --filter @navx/baseline-harness exec node tools/serve.mjs &
+          npx wait-on http://localhost:4317/fixtures/manifest.json
+          pnpm --filter @navx/baseline-harness run stage2:layers
+          pnpm --filter @navx/baseline-harness run stage2:utilities
+          pnpm --filter @navx/baseline-harness run stage2:rtl -- --project desktop
+          pnpm --filter @navx/baseline-harness run stage2:rtl -- --project mobile
 
       - if: always() && steps.guard.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: baseline-reports
+          path: |
+            tools/baseline/playwright-report/
+            tools/baseline/reference/stage2/report.json
+            tools/baseline/reference/stage2/rtl-audit-*.json
+            tools/baseline/reference/stage2/**/*.diff.png
           retention-days: 14
