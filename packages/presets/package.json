@@ -1,11 +1,23 @@
 {
   "name": "@navx/presets",
-  "version": "0.0.0",
-  "description": "Stage 5 \u2014 the 46 catalogue variants as data.",
-  "license": "MIT",
+  "version": "1.0.0",
   "type": "module",
-  "sideEffects": ["*.css"],
-  "files": ["dist"],
+  "description": "The NAVX catalogue as data — 28 presets averaging 179 B, and one render plan five frameworks walk.",
+  "keywords": ["navx", "navbar", "navigation", "presets", "megamenu", "templates", "ssr"],
+  "license": "MIT",
+  "author": "Ahmed Jab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AJ69-i/navx.git",
+    "directory": "packages/presets"
+  },
+  "homepage": "https://github.com/AJ69-i/navx/tree/main/packages/presets#readme",
+  "bugs": {
+    "url": "https://github.com/AJ69-i/navx/issues"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -29,9 +41,12 @@
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "files": ["dist", "LICENSE"],
+  "sideEffects": ["*.css"],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
@@ -45,14 +60,5 @@
     "publint": "0.2.12",
     "tsup": "catalog:",
     "typescript": "catalog:"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/trio-telecom/navx.git",
-    "directory": "packages/presets"
   }
 }

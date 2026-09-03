@@ -2,7 +2,7 @@
   "name": "@navx/baseline-harness",
   "version": "0.0.0",
   "private": true,
-  "description": "Stage 0 — captures visual baselines from the legacy NAVX source so every later stage has a regression net. Reads legacy from NAVX_LEGACY_ROOT; never vendors it.",
+  "description": "Stage 0 \u2014 captures visual baselines from the legacy NAVX source so every later stage has a regression net. Reads legacy from NAVX_LEGACY_ROOT; never vendors it.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -34,6 +34,7 @@
   },
   "//devDependencies": "Playwright is pinned exactly, not ranged. Chromium build differences change text rasterisation, which silently invalidates every baseline. Upgrading is a deliberate act that requires re-approving the snapshots.",
   "devDependencies": {
+    "@navx/codemod": "workspace:*",
     "@navx/core": "workspace:*",
     "@navx/element": "workspace:*",
     "@navx/presets": "workspace:*",

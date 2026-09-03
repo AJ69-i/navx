@@ -1,11 +1,23 @@
 {
   "name": "@navx/vue",
-  "version": "0.0.0",
-  "description": "Stage 4 \u2014 Vue adapter.",
-  "license": "MIT",
+  "version": "1.0.0",
   "type": "module",
-  "sideEffects": ["*.css"],
-  "files": ["dist"],
+  "description": "Vue binding for @navx/core — shallowRef and onScopeDispose, 702 B gzipped.",
+  "keywords": ["navx", "vue", "navbar", "navigation", "headless", "composable", "accessibility"],
+  "license": "MIT",
+  "author": "Ahmed Jab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AJ69-i/navx.git",
+    "directory": "packages/vue"
+  },
+  "homepage": "https://github.com/AJ69-i/navx/tree/main/packages/vue#readme",
+  "bugs": {
+    "url": "https://github.com/AJ69-i/navx/issues"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -29,9 +41,17 @@
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "preset": ["./dist/preset.d.ts"]
+    }
+  },
+  "files": ["dist", "LICENSE"],
+  "sideEffects": ["*.css"],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
@@ -49,27 +69,13 @@
     "vitest": "catalog:",
     "vue": "^3.5.42"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/trio-telecom/navx.git",
-    "directory": "packages/vue"
-  },
   "dependencies": {
-    "@navx/core": "workspace:*",
-    "@navx/presets": "workspace:*"
+    "@navx/core": "workspace:^",
+    "@navx/presets": "workspace:^"
   },
   "//peerDependencies": "effectScope/onScopeDispose landed in 3.2, and the composable ties its teardown to the scope rather than to onUnmounted so it works outside a component too.",
   "peerDependencies": {
     "vue": ">=3.2"
   },
-  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped.",
-  "typesVersions": {
-    "*": {
-      "preset": ["./dist/preset.d.ts"]
-    }
-  }
+  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped."
 }

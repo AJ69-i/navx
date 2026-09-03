@@ -1,11 +1,31 @@
 {
   "name": "@navx/element",
-  "version": "0.0.0",
-  "description": "Stage 4 \u2014 framework-free custom element.",
-  "license": "MIT",
+  "version": "1.0.0",
   "type": "module",
-  "sideEffects": ["*.css"],
-  "files": ["dist"],
+  "description": "The framework-free NAVX binding — <navx-nav>, light DOM, no build step. 861 B gzipped.",
+  "keywords": [
+    "navx",
+    "web-components",
+    "custom-elements",
+    "navbar",
+    "navigation",
+    "headless",
+    "accessibility"
+  ],
+  "license": "MIT",
+  "author": "Ahmed Jab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AJ69-i/navx.git",
+    "directory": "packages/element"
+  },
+  "homepage": "https://github.com/AJ69-i/navx/tree/main/packages/element#readme",
+  "bugs": {
+    "url": "https://github.com/AJ69-i/navx/issues"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -29,9 +49,17 @@
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "preset": ["./dist/preset.d.ts"]
+    }
+  },
+  "files": ["dist", "LICENSE"],
+  "sideEffects": ["*.css"],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
@@ -48,23 +76,9 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/trio-telecom/navx.git",
-    "directory": "packages/element"
-  },
   "dependencies": {
-    "@navx/core": "workspace:*",
-    "@navx/presets": "workspace:*"
+    "@navx/core": "workspace:^",
+    "@navx/presets": "workspace:^"
   },
-  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped.",
-  "typesVersions": {
-    "*": {
-      "preset": ["./dist/preset.d.ts"]
-    }
-  }
+  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped."
 }

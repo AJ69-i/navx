@@ -1,30 +1,22 @@
 {
-  "name": "@navx/core",
+  "name": "@navx/codemod",
   "version": "1.0.0",
   "type": "module",
-  "description": "The headless NAVX navigation core — a pure state machine, WCAG keyboard and ARIA, and a detach() proven to leak nothing. 4.5 kB gzipped.",
-  "keywords": [
-    "navx",
-    "navbar",
-    "navigation",
-    "headless",
-    "state-machine",
-    "accessibility",
-    "aria",
-    "keyboard-navigation",
-    "megamenu",
-    "off-canvas"
-  ],
+  "description": "Rewrite legacy NAVX markup to the @navx API — the same mapping table the 292-screenshot visual gate validates.",
+  "keywords": ["navx", "codemod", "migration", "navbar", "navigation", "refactor"],
   "license": "MIT",
   "author": "Ahmed Jab",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AJ69-i/navx.git",
-    "directory": "packages/core"
+    "directory": "packages/codemod"
   },
-  "homepage": "https://github.com/AJ69-i/navx/tree/main/packages/core#readme",
+  "homepage": "https://github.com/AJ69-i/navx/tree/main/packages/codemod#readme",
   "bugs": {
     "url": "https://github.com/AJ69-i/navx/issues"
+  },
+  "bin": {
+    "navx-codemod": "./bin/navx-codemod.mjs"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -40,25 +32,25 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./scrollspy": {
+    "./cli": {
       "import": {
-        "types": "./dist/scrollspy.d.ts",
-        "default": "./dist/scrollspy.js"
+        "types": "./dist/cli.d.ts",
+        "default": "./dist/cli.js"
       },
       "require": {
-        "types": "./dist/scrollspy.d.cts",
-        "default": "./dist/scrollspy.cjs"
+        "types": "./dist/cli.d.cts",
+        "default": "./dist/cli.cjs"
       }
     },
     "./package.json": "./package.json"
   },
   "typesVersions": {
     "*": {
-      "scrollspy": ["./dist/scrollspy.d.ts"]
+      "cli": ["./dist/cli.d.ts"]
     }
   },
-  "files": ["dist", "LICENSE"],
-  "sideEffects": ["*.css"],
+  "files": ["dist", "bin", "README.md", "LICENSE"],
+  "sideEffects": false,
   "publishConfig": {
     "access": "public",
     "provenance": true
@@ -78,6 +70,5 @@
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
-  },
-  "//typesVersions": "node10 resolution predates `exports` and cannot follow ./scrollspy into dist."
+  }
 }

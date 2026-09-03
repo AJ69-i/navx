@@ -1,11 +1,34 @@
 {
   "name": "@navx/styles",
-  "version": "0.0.0",
-  "description": "The NAVX stylesheet \u2014 logical properties, container queries, zero !important. Assign your own @layer at import time.",
-  "license": "MIT",
+  "version": "1.0.0",
   "type": "module",
-  "sideEffects": ["*.css"],
-  "files": ["dist"],
+  "description": "The NAVX stylesheet — 4.2 kB gzipped, zero !important, zero physical-direction properties, container queries and full RTL.",
+  "keywords": [
+    "navx",
+    "navbar",
+    "navigation",
+    "css",
+    "menu",
+    "megamenu",
+    "responsive",
+    "rtl",
+    "logical-properties",
+    "container-queries"
+  ],
+  "license": "MIT",
+  "author": "Ahmed Jab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AJ69-i/navx.git",
+    "directory": "packages/styles"
+  },
+  "homepage": "https://github.com/AJ69-i/navx/tree/main/packages/styles#readme",
+  "bugs": {
+    "url": "https://github.com/AJ69-i/navx/issues"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -23,9 +46,12 @@
     "./navx.layer.css": "./dist/navx.layer.css",
     "./navx.layer.min.css": "./dist/navx.layer.min.css"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "files": ["dist", "LICENSE"],
+  "sideEffects": ["*.css"],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node build.mjs && tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
@@ -41,16 +67,7 @@
     "tsup": "catalog:",
     "typescript": "catalog:"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/trio-telecom/navx.git",
-    "directory": "packages/styles"
-  },
   "dependencies": {
-    "@navx/tokens": "workspace:*"
+    "@navx/tokens": "workspace:^"
   }
 }

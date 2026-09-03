@@ -19,12 +19,46 @@ MIT. In active development — see the roadmap below for what exists today.
 | [`@navx/element`](packages/element) | 4 | **shipping** — 861 B, `<navx-nav>`, no build step |
 | [`@navx/angular`](packages/angular) | 4 | **shipping** — 2.1 kB, standalone directive, signals, APF |
 | [`@navx/presets`](packages/presets) | 5 | **shipping** — 28 presets, 179 B each, one markup contract for all five adapters |
+| [`@navx/codemod`](packages/codemod) | 7 | **shipping** — the migration as a command, using the table the visual gate validates |
 
 All nine packages ship. Each adapter also has a `./preset` subpath carrying its
 render walker, so an app that only wants the headless hook still gets the byte
 count in the table above.
 
 ## Getting started
+
+```bash
+npm install @navx/core @navx/styles @navx/tokens
+```
+
+```ts
+import { attach, createNav } from '@navx/core';
+import '@navx/tokens/tokens.css';
+import '@navx/styles/navx.css';
+
+const detach = attach(document.querySelector('.navx'), createNav());
+```
+
+Using a framework? `@navx/react`, `@navx/vue`, `@navx/svelte`, `@navx/angular`
+and `@navx/element` each wrap that in their own idiom, and none is over 2.1 kB.
+Want the markup written for you too? `@navx/presets` renders it from a
+179-byte preset.
+
+Coming from the legacy plugin:
+
+```bash
+npx @navx/codemod ./src        # dry run
+npx @navx/codemod ./src --write
+```
+
+| | |
+|---|---|
+| [Migration guide](docs/migration.md) | every mapping and every deliberate divergence |
+| [Changelog](CHANGELOG.md) | what 1.0.0 is |
+| [Stage records](docs) | how each part was built and what the gates found |
+
+## Development
+
 
 ```bash
 pnpm install
@@ -85,7 +119,7 @@ absent, so outside contributors still get a green CI.
 | 4 | Adapters — React, Vue, Svelte, Angular, custom element | ✅ done |
 | 5 | Presets — the catalogue as data, and one markup contract | ✅ done |
 | 6 | Scroll-spy and overlay theming — the deferred legacy options | ✅ done |
-| 7 | Docs, migration, v1.0.0 | next |
+| 7 | Docs, migration, v1.0.0 | ✅ done |
 
 ### Stage 6 result
 

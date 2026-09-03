@@ -63,6 +63,14 @@ const MOUNTS = [
     root: path.join(REPO_ROOT, '..', '..', 'packages', 'core', 'dist', 'scrollspy.js'),
     file: true,
   },
+  // Stage 7: the codemod's mapping table, which the Stage 2 transform imports.
+  // Serving the built package rather than a copy is what makes the 292-baseline
+  // run a proof about the table users actually get.
+  {
+    prefix: '/navx/codemod.js',
+    root: path.join(REPO_ROOT, '..', '..', 'packages', 'codemod', 'dist', 'index.js'),
+    file: true,
+  },
   { prefix: '/harness-tools/', root: path.join(REPO_ROOT, 'tools') },
   { prefix: '/legacy/', root: LEGACY_ROOT },
   { prefix: '/', root: paths.harness },

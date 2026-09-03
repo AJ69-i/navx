@@ -1,11 +1,23 @@
 {
   "name": "@navx/tokens",
-  "version": "0.0.0",
-  "description": "Design tokens for NAVX \u2014 three tiers, dark theme, RTL and ten skins as CSS custom properties.",
-  "license": "MIT",
+  "version": "1.0.0",
   "type": "module",
-  "sideEffects": ["*.css"],
-  "files": ["dist"],
+  "description": "Design tokens for NAVX — 201 DTCG tokens, a dark theme, RTL and ten skins, 2.3 kB gzipped.",
+  "keywords": ["navx", "design-tokens", "dtcg", "css-variables", "theming", "dark-mode", "rtl"],
+  "license": "MIT",
+  "author": "Ahmed Jab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AJ69-i/navx.git",
+    "directory": "packages/tokens"
+  },
+  "homepage": "https://github.com/AJ69-i/navx/tree/main/packages/tokens#readme",
+  "bugs": {
+    "url": "https://github.com/AJ69-i/navx/issues"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -23,9 +35,12 @@
     "./skins/*.css": "./dist/skins/*.css",
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "files": ["dist", "LICENSE"],
+  "sideEffects": ["*.css"],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node build.mjs && tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
@@ -40,15 +55,5 @@
     "vitest": "catalog:",
     "@arethetypeswrong/cli": "0.18.5",
     "publint": "0.2.12"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/trio-telecom/navx.git",
-    "directory": "packages/tokens"
-  },
-  "keywords": ["design-tokens", "css-variables", "dtcg", "navbar", "rtl", "dark-mode"]
+  }
 }

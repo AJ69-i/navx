@@ -51,10 +51,10 @@ importers:
   packages/angular:
     dependencies:
       '@navx/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@navx/presets':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../presets
     devDependencies:
       '@angular/common':
@@ -95,6 +95,30 @@ importers:
         version: 0.15.1
     publishDirectory: dist
 
+  packages/codemod:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: 0.18.5
+        version: 0.18.5
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.10.2
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      publint:
+        specifier: 0.2.12
+        version: 0.2.12
+      tsup:
+        specifier: 'catalog:'
+        version: 8.3.5(jiti@2.7.0)(postcss@8.5.26)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.8(@types/node@22.10.2)(jsdom@25.0.1)(less@4.9.1)(lightningcss@1.29.1)(sass@1.103.1)
+
   packages/core:
     devDependencies:
       '@arethetypeswrong/cli':
@@ -122,10 +146,10 @@ importers:
   packages/element:
     dependencies:
       '@navx/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@navx/presets':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../presets
     devDependencies:
       '@arethetypeswrong/cli':
@@ -171,10 +195,10 @@ importers:
   packages/react:
     dependencies:
       '@navx/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@navx/presets':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../presets
     devDependencies:
       '@arethetypeswrong/cli':
@@ -220,7 +244,7 @@ importers:
   packages/styles:
     dependencies:
       '@navx/tokens':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../tokens
     devDependencies:
       '@arethetypeswrong/cli':
@@ -245,10 +269,10 @@ importers:
   packages/svelte:
     dependencies:
       '@navx/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@navx/presets':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../presets
     devDependencies:
       '@arethetypeswrong/cli':
@@ -300,10 +324,10 @@ importers:
   packages/vue:
     dependencies:
       '@navx/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@navx/presets':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../presets
     devDependencies:
       '@arethetypeswrong/cli':
@@ -333,6 +357,9 @@ importers:
 
   tools/baseline:
     devDependencies:
+      '@navx/codemod':
+        specifier: workspace:*
+        version: link:../../packages/codemod
       '@navx/core':
         specifier: workspace:*
         version: link:../../packages/core
