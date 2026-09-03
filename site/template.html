@@ -1,0 +1,679 @@
+<title>NAVX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* ─── NAVX's own token layer, scoped to the demo ─────────────────────────── */
+__TOKENS__
+/* ─── NAVX's own stylesheet, exactly as published ────────────────────────── */
+__SHEET__
+</style>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   The page. Transit-signage palette: route blue on signage white, hairline
+   rules, and a route line down the left that the stages hang off — the seven
+   stages are a real sequence, so a stationed spine encodes something true.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --paper: #f1f3f2;
+  --paper-2: #ffffff;
+  --ink: #0f1519;
+  --ink-2: #47555c;
+  --ink-3: #6d7c83;
+  --route: #0b5fa5;
+  --route-soft: #e3edf6;
+  --interchange: #c6412c;
+  --pass: #146b45;
+  --rail: #cbd2d4;
+  --rail-2: #e2e6e6;
+
+  --display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --body: 'Public Sans', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --measure: 64ch;
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #0c1114;
+    --paper-2: #121a1e;
+    --ink: #e4e9e9;
+    --ink-2: #9daab0;
+    --ink-3: #74858c;
+    --route: #4fa3e0;
+    --route-soft: #14293a;
+    --interchange: #e2705c;
+    --pass: #3fae7c;
+    --rail: #243036;
+    --rail-2: #1b262b;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: #0c1114;
+  --paper-2: #121a1e;
+  --ink: #e4e9e9;
+  --ink-2: #9daab0;
+  --ink-3: #74858c;
+  --route: #4fa3e0;
+  --route-soft: #14293a;
+  --interchange: #e2705c;
+  --pass: #3fae7c;
+  --rail: #243036;
+  --rail-2: #1b262b;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 78rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.6rem, 7vw, 4.75rem); font-weight: 800; line-height: 0.98; letter-spacing: -0.03em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 700; letter-spacing: -0.02em; }
+h3 { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.01em; }
+p { margin: 0; max-width: var(--measure); }
+
+a { color: var(--route); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--route);
+  outline-offset: 3px;
+}
+
+code, .mono { font-family: var(--mono); font-size: 0.875em; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ─── header ──────────────────────────────────────────────────────────────── */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.25rem;
+  border-block-end: 1px solid var(--rail);
+}
+.wordmark {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+/* A route bullet: the one piece of signage vocabulary the mark carries. */
+.bullet {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  border-radius: 50%;
+  background: var(--route);
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--route);
+}
+.masthead nav { display: flex; gap: 1.5rem; font-size: 0.9rem; }
+.masthead nav a { color: var(--ink-2); text-decoration: none; }
+.masthead nav a:hover { color: var(--route); }
+
+/* ─── hero ────────────────────────────────────────────────────────────────── */
+
+.hero { padding-block: clamp(2.5rem, 6vw, 4.5rem) 2.5rem; }
+.hero-grid {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 62rem) { .hero-grid { grid-template-columns: 1fr 1fr; } }
+
+.lede { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-2); margin-block-start: 1.25rem; }
+.hero h1 { margin-block-start: 0.75rem; }
+.hero h1 em { font-style: normal; color: var(--route); }
+
+.install { margin-block-start: 2rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.cmd {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--paper-2);
+  border: 1px solid var(--rail);
+  padding: 0.7rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  overflow-x: auto;
+}
+.cmd::before { content: '$'; color: var(--ink-3); flex: none; }
+
+/* ─── the live demo ───────────────────────────────────────────────────────── */
+
+.demo {
+  border: 1px solid var(--rail);
+  background: var(--paper-2);
+}
+.demo-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.9rem;
+  border-block-end: 1px solid var(--rail);
+}
+.demo-mode { font-family: var(--mono); font-size: 0.72rem; color: var(--route); font-weight: 500; }
+/* The demo surface is where NAVX's tokens live. Nothing outside it is styled
+   by the library, which is the claim the page is making. */
+.demo-surface {
+  padding: 1.1rem;
+  background:
+    linear-gradient(var(--rail-2) 1px, transparent 1px) 0 0 / 100% 1.5rem,
+    var(--paper-2);
+}
+.demo-viewport {
+  inline-size: 100%;
+  margin-inline: auto;
+  max-inline-size: 100%;
+  min-block-size: 15rem;
+  transition: inline-size 120ms ease-out;
+}
+.demo-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border-block-start: 1px solid var(--rail);
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+.demo-controls input[type='range'] { flex: 1; accent-color: var(--route); }
+.demo-controls .val { font-family: var(--mono); font-size: 0.78rem; min-inline-size: 4.5rem; text-align: end; font-variant-numeric: tabular-nums; }
+.hint { font-size: 0.8rem; color: var(--ink-3); margin-block-start: 0.6rem; }
+
+/* ─── measured evidence ───────────────────────────────────────────────────── */
+
+.band { padding-block: clamp(3rem, 7vw, 5rem); border-block-start: 1px solid var(--rail); }
+.band-head { margin-block-end: 2rem; }
+.band-head p { margin-block-start: 0.75rem; color: var(--ink-2); }
+
+.gates {
+  display: grid;
+  gap: 1px;
+  background: var(--rail);
+  border: 1px solid var(--rail);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 44rem) { .gates { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 68rem) { .gates { grid-template-columns: repeat(3, 1fr); } }
+
+.gate { background: var(--paper-2); padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.gate dt { font-size: 0.9rem; font-weight: 600; }
+.gate dd { margin: 0; font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2); line-height: 1.55; }
+.gate .result {
+  align-self: start;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pass);
+  border: 1px solid currentColor;
+  padding: 0.1rem 0.4rem;
+}
+
+/* ─── comparison ──────────────────────────────────────────────────────────── */
+
+.compare { inline-size: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.compare th, .compare td { text-align: start; padding: 0.75rem 0.9rem; border-block-end: 1px solid var(--rail-2); vertical-align: top; }
+.compare thead th { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); border-block-end: 1px solid var(--rail); }
+.compare tbody th { font-weight: 600; inline-size: 34%; }
+.compare .was { color: var(--interchange); }
+.compare .now { color: var(--ink); }
+.table-scroll { overflow-x: auto; }
+
+/* ─── packages ────────────────────────────────────────────────────────────── */
+
+.pkgs { display: grid; gap: 1px; background: var(--rail); border: 1px solid var(--rail); grid-template-columns: 1fr; }
+@media (min-width: 40rem) { .pkgs { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 64rem) { .pkgs { grid-template-columns: repeat(3, 1fr); } }
+.pkg { background: var(--paper-2); padding: 1rem 1.15rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.pkg .name { font-family: var(--mono); font-size: 0.85rem; font-weight: 500; color: var(--route); }
+.pkg .size { font-family: var(--mono); font-size: 1.35rem; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.pkg .what { font-size: 0.82rem; color: var(--ink-2); }
+
+/* ─── the line: seven stages ──────────────────────────────────────────────── */
+
+.line { position: relative; padding-inline-start: 2.5rem; display: flex; flex-direction: column; gap: 1.4rem; }
+.line::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.55rem 0.55rem;
+  inset-inline-start: 0.42rem;
+  inline-size: 3px;
+  background: var(--route);
+  border-radius: 2px;
+}
+.stop { position: relative; }
+.stop::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -2.5rem;
+  inset-block-start: 0.42rem;
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 3px solid var(--route);
+}
+.stop h3 { display: flex; align-items: baseline; gap: 0.6rem; }
+.stop h3 .n { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3); font-weight: 500; }
+.stop p { font-size: 0.9rem; color: var(--ink-2); margin-block-start: 0.15rem; }
+
+/* ─── migration ───────────────────────────────────────────────────────────── */
+
+.codemod-out {
+  background: var(--paper-2);
+  border: 1px solid var(--rail);
+  padding: 1rem 1.15rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ink-2);
+}
+.codemod-out b { color: var(--ink); font-weight: 500; }
+.codemod-out .add { color: var(--pass); }
+.codemod-out .rm { color: var(--interchange); }
+
+.two-col { display: grid; gap: clamp(1.5rem, 4vw, 3rem); grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 58rem) { .two-col { grid-template-columns: 1fr 1fr; } }
+
+/* ─── footer ──────────────────────────────────────────────────────────────── */
+
+footer { border-block-start: 1px solid var(--rail); padding-block: 2.5rem 3.5rem; color: var(--ink-3); font-size: 0.85rem; }
+footer .row { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: space-between; align-items: baseline; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="wordmark"><span class="bullet" aria-hidden="true"></span> NAVX</div>
+    <nav aria-label="Sections">
+      <a href="#evidence">Evidence</a>
+      <a href="#packages">Packages</a>
+      <a href="#migrate">Migrate</a>
+      <a href="https://github.com/AJ69-i/navx">GitHub</a>
+    </nav>
+  </header>
+</div>
+
+<main>
+  <section class="wrap hero">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">v1.0.0 · MIT · ten packages</p>
+        <h1>The navbar,<br><em>measured.</em></h1>
+        <p class="lede">
+          A commercial navigation plugin, rebuilt as an open ecosystem — and
+          checked at every step against 292 approved screenshots of the
+          original. Headless core, five frameworks, full RTL, and a
+          <code>detach()</code> proven by heap snapshots to leave nothing behind.
+        </p>
+
+        <div class="install">
+          <div class="cmd">npm install @navx/core @navx/styles @navx/tokens</div>
+          <div class="cmd">npx @navx/codemod ./src</div>
+        </div>
+        <p class="hint">
+          4.5 kB core, 4.2 kB stylesheet, both gzipped. Nothing else required.
+        </p>
+      </div>
+
+      <div>
+        <div class="demo">
+          <div class="demo-head">
+            <span class="eyebrow">Live — the published core and stylesheet</span>
+            <span class="demo-mode" id="mode">bar</span>
+          </div>
+          <div class="demo-surface">
+            <div class="demo-viewport" id="viewport">
+              <nav class="navx" id="demo-nav" data-navx-align="between">
+                <div class="navx-header">
+                  <div class="navx-brand"><a href="#demo">Meridian</a></div>
+                  <button class="navx-toggler" type="button" aria-expanded="false" aria-label="Menu">
+                    <i class="navx-toggler-icon"></i>
+                  </button>
+                </div>
+                <div class="navx-panel">
+                  <div class="navx-panel-header">
+                    <div class="navx-brand"><a href="#demo">Meridian</a></div>
+                    <button class="navx-panel-close" type="button" aria-label="Close">✕</button>
+                  </div>
+                  <ul class="navx-menu">
+                    <li class="navx-item" data-navx-current=""><a class="navx-link" href="#demo">Home</a></li>
+                    <li class="navx-item">
+                      <div class="navx-link">
+                        <a href="#demo">Lines</a>
+                        <button class="navx-chevron" type="button" aria-expanded="false" aria-label="Lines submenu"></button>
+                      </div>
+                      <ul class="navx-submenu">
+                        <li class="navx-submenu-item"><a class="navx-submenu-link" href="#demo">Northern</a></li>
+                        <li class="navx-submenu-item">
+                          <div class="navx-submenu-link">
+                            <a href="#demo">Central</a>
+                            <button class="navx-chevron" type="button" aria-expanded="false" aria-label="Central submenu"></button>
+                          </div>
+                          <ul class="navx-submenu">
+                            <li class="navx-submenu-item"><a class="navx-submenu-link" href="#demo">Eastbound</a></li>
+                            <li class="navx-submenu-item"><a class="navx-submenu-link" href="#demo">Westbound</a></li>
+                          </ul>
+                        </li>
+                        <li class="navx-submenu-item"><a class="navx-submenu-link" href="#demo">Circle</a></li>
+                      </ul>
+                    </li>
+                    <li class="navx-item"><a class="navx-link" href="#demo">Stations</a></li>
+                    <li class="navx-item"><a class="navx-link" href="#demo">Status</a></li>
+                  </ul>
+                </div>
+                <div class="navx-overlay"></div>
+              </nav>
+            </div>
+          </div>
+          <div class="demo-controls">
+            <label for="width">Container</label>
+            <input type="range" id="width" min="320" max="1100" value="1100" step="4">
+            <span class="val" id="widthval">1100 px</span>
+          </div>
+        </div>
+        <p class="hint">
+          Drag the container narrower and the nav becomes a drawer — a container
+          query, not a media query, so a nav in a 400&nbsp;px sidebar is a drawer
+          on a 4K display. Tab to the chevron and press Enter; Escape closes it
+          and returns focus.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="evidence">
+    <div class="wrap">
+      <div class="band-head">
+        <p class="eyebrow">Evidence</p>
+        <h2>Every claim on this page has a gate behind it</h2>
+        <p>
+          The original was captured as 292 approved screenshots across three
+          viewports before a line was rewritten. Every stage since has been
+          compared against them, and these run in CI on each commit.
+        </p>
+      </div>
+
+      <dl class="gates">
+        <div class="gate">
+          <dt>Visual regression — the stylesheet</dt>
+          <dd>292 renders · 184 identical<br>0 above 0.2% · 0 errored</dd>
+          <span class="result">pass</span>
+        </div>
+        <div class="gate">
+          <dt>Visual regression — generated markup</dt>
+          <dd>292 renders · 181 identical<br>0 above 0.2% · 0 errored</dd>
+          <span class="result">pass</span>
+        </div>
+        <div class="gate">
+          <dt>Cross-adapter DOM identity</dt>
+          <dd>56 variants × 7 render paths<br>392 comparisons · 0 divergences</dd>
+          <span class="result">pass</span>
+        </div>
+        <div class="gate">
+          <dt>Memory — CDP heap snapshots</dt>
+          <dd>0 listeners left after detach<br>element collected · legacy leaks 12</dd>
+          <span class="result">pass</span>
+        </div>
+        <div class="gate">
+          <dt>Accessibility — axe-core + keyboard</dt>
+          <dd>6 / 6 keyboard behaviours<br>no violation legacy did not have</dd>
+          <span class="result">pass</span>
+        </div>
+        <div class="gate">
+          <dt>RTL audit</dt>
+          <dd>chevron side · overlap · drawer side<br>legacy 35 / 18 / 56 → NAVX 0 / 0 / 0</dd>
+          <span class="result">pass</span>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap two-col">
+      <div>
+        <p class="eyebrow">What changed</p>
+        <h2>Where the rewrite actually earns its keep</h2>
+        <p style="margin-block-start:0.75rem;color:var(--ink-2)">
+          Not a port. Each of these was a defect the gates found, or a decision
+          taken because the browser now does it better than a plugin can.
+        </p>
+      </div>
+      <div class="table-scroll">
+        <table class="compare">
+          <thead>
+            <tr><th scope="col">&nbsp;</th><th scope="col">Legacy</th><th scope="col">NAVX</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Keyboard</th>
+              <td class="was">no disclosure in the tab order</td>
+              <td class="now">APG disclosure navigation, 6/6</td>
+            </tr>
+            <tr>
+              <th scope="row">Teardown</th>
+              <td class="was">3 listeners leaked per mount</td>
+              <td class="now">0, element collected</td>
+            </tr>
+            <tr>
+              <th scope="row">Right-to-left</th>
+              <td class="was">109 failing checks in Arabic</td>
+              <td class="now">logical properties, 0</td>
+            </tr>
+            <tr>
+              <th scope="row">Breakpoint</th>
+              <td class="was">media query, viewport-wide</td>
+              <td class="now">container query, per nav</td>
+            </tr>
+            <tr>
+              <th scope="row">Overrides</th>
+              <td class="was">18 <code>!important</code></td>
+              <td class="now">0, with a specificity ceiling</td>
+            </tr>
+            <tr>
+              <th scope="row">Scroll-spy</th>
+              <td class="was">~90 lines of rAF easing</td>
+              <td class="now"><code>scroll-behavior</code> + <code>scroll-margin</code></td>
+            </tr>
+            <tr>
+              <th scope="row">Theming</th>
+              <td class="was">ten stylesheets</td>
+              <td class="now">ten token overlays</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="packages">
+    <div class="wrap">
+      <div class="band-head">
+        <p class="eyebrow">Packages</p>
+        <h2>Take the parts you need</h2>
+        <p>
+          Every size is gzipped and enforced by a budget in CI. The adapters are
+          lifecycle wrappers — none of them contains a transition, an ARIA rule
+          or a breakpoint.
+        </p>
+      </div>
+      <div class="pkgs">
+        <div class="pkg"><span class="name">@navx/core</span><span class="size">4.5 kB</span><span class="what">State machine, ARIA, keyboard, provable detach</span></div>
+        <div class="pkg"><span class="name">@navx/styles</span><span class="size">4.2 kB</span><span class="what">The stylesheet. Zero !important</span></div>
+        <div class="pkg"><span class="name">@navx/tokens</span><span class="size">2.3 kB</span><span class="what">201 DTCG tokens, dark theme, ten skins</span></div>
+        <div class="pkg"><span class="name">@navx/presets</span><span class="size">5.4 kB</span><span class="what">28 presets, one render plan</span></div>
+        <div class="pkg"><span class="name">@navx/react</span><span class="size">620 B</span><span class="what">useSyncExternalStore</span></div>
+        <div class="pkg"><span class="name">@navx/vue</span><span class="size">702 B</span><span class="what">shallowRef + onScopeDispose</span></div>
+        <div class="pkg"><span class="name">@navx/svelte</span><span class="size">429 B</span><span class="what">A store and an action</span></div>
+        <div class="pkg"><span class="name">@navx/element</span><span class="size">861 B</span><span class="what">&lt;navx-nav&gt;, no build step</span></div>
+        <div class="pkg"><span class="name">@navx/angular</span><span class="size">2.1 kB</span><span class="what">Standalone directive, signals, APF</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="migrate">
+    <div class="wrap two-col">
+      <div>
+        <p class="eyebrow">Migration</p>
+        <h2>The markup half is a command</h2>
+        <p style="margin-block-start:0.75rem;color:var(--ink-2)">
+          The codemod's mapping table is not a transcription of the guide — it
+          is the table the visual gate runs against all 292 screenshots. Every
+          entry has been checked by rendering a real page with it and finding
+          that nothing moved.
+        </p>
+        <p style="margin-block-start:0.9rem;color:var(--ink-2)">
+          It is dry by default, idempotent, and refuses to touch a class list it
+          cannot read statically — <code>clsx(...)</code>, <code>:class</code>,
+          <code>class:name</code> are reported with a line number, never
+          rewritten.
+        </p>
+        <p style="margin-block-start:1.25rem">
+          <a href="https://github.com/AJ69-i/navx/blob/main/docs/migration.md">Read the migration guide →</a>
+        </p>
+      </div>
+      <div>
+        <div class="cmd" style="margin-block-end:0.75rem">npx @navx/codemod ./src</div>
+<div class="codemod-out">would rewrite <b>1 of 1</b> file(s): <b>1115</b> class rename(s), <b>97</b> attribute(s)
+
+  renamed (1115)
+      234  <span class="rm">navigation-item</span> → <span class="add">navx-item</span>
+      234  <span class="rm">navigation-link</span> → <span class="add">navx-link</span>
+       78  <span class="rm">navigation-logo</span> → <span class="add">navx-logo</span>
+       46  <span class="rm">hamburger-icon</span> → <span class="add">navx-toggler-icon</span>
+
+  promoted to attributes (97)
+       40  <span class="rm">is-active</span> → <span class="add">data-navx-current</span>
+       24  <span class="rm">navigation-justified</span> → <span class="add">data-navx-align="between"</span>
+
+  dropped (92)
+       46  <span class="rm">navigation-landscape</span> — the container query replaces it
+       46  <span class="rm">scroll-momentum</span> — now a plain declaration
+
+  <b>unmapped: 0</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap two-col">
+      <div>
+        <p class="eyebrow">How it was built</p>
+        <h2>Seven stages, each gated by the one before</h2>
+        <p style="margin-block-start:0.75rem;color:var(--ink-2)">
+          The order is the point: nothing was rewritten until there was a way to
+          prove the rewrite had not changed anything.
+        </p>
+      </div>
+      <div class="line">
+        <div class="stop">
+          <h3><span class="n">00</span> Baselines</h3>
+          <p>292 screenshots of the original, three viewports, approved before a line changed.</p>
+        </div>
+        <div class="stop">
+          <h3><span class="n">01</span> Tokens</h3>
+          <p>201 DTCG tokens. Ten skins became token overlays instead of ten stylesheets.</p>
+        </div>
+        <div class="stop">
+          <h3><span class="n">02</span> Stylesheet</h3>
+          <p>Logical properties, container queries, zero <code>!important</code>. Cascade layers were measured and rejected — they lost 58 declarations to a Bootstrap page.</p>
+        </div>
+        <div class="stop">
+          <h3><span class="n">03</span> Headless core</h3>
+          <p>A pure state machine and one DOM binder. Every listener on an <code>AbortController</code>, proven with heap snapshots.</p>
+        </div>
+        <div class="stop">
+          <h3><span class="n">04</span> Adapters</h3>
+          <p>Five bindings, none over 2.1 kB, none containing navigation logic.</p>
+        </div>
+        <div class="stop">
+          <h3><span class="n">05</span> Presets</h3>
+          <p>56 catalogue variants collapsed to 28 presets of 179 B. One render plan; 392 comparisons prove all five adapters emit identical DOM.</p>
+        </div>
+        <div class="stop">
+          <h3><span class="n">06</span> Scroll-spy &amp; theming</h3>
+          <p>Ninety lines of easing replaced by two CSS properties, and the browser's own focus and history handling.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>MIT · © 2026 Ahmed Jab</span>
+    <span class="mono">@navx · v1.0.0</span>
+  </div>
+</footer>
+
+<script type="module">
+/* The published core, inlined verbatim. The nav above is the real library. */
+__CORE__
+
+const nav = document.getElementById('demo-nav');
+const machine = createNav();
+attach(nav, machine, { dismissOnOutside: true });
+
+const label = document.getElementById('mode');
+machine.subscribe((state) => { label.textContent = state.mode; });
+label.textContent = machine.getState().mode;
+
+const range = document.getElementById('width');
+const viewport = document.getElementById('viewport');
+const readout = document.getElementById('widthval');
+const surface = viewport.parentElement;
+
+/* The slider's ceiling is whatever the column actually offers, recomputed on
+   resize. A fixed max let the demo render wider than its container, which put
+   a `data-navx-align="between"` menu off the right edge of the page. */
+const fit = () => {
+  const max = Math.round(surface.clientWidth);
+  range.max = String(max);
+  if (Number(range.value) > max) range.value = String(max);
+  viewport.style.inlineSize = `${range.value}px`;
+  readout.textContent = `${range.value} px`;
+};
+range.addEventListener('input', fit);
+addEventListener('resize', fit);
+fit();
+range.value = range.max;
+fit();
+</script>

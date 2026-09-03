@@ -1,0 +1,76 @@
+name: pages
+
+# The landing page lives in the repo as `site/index.html` and inlines the
+# built tokens, stylesheet and core — the demo on it is the real library, not a
+# mock-up. That means it has to be *rebuilt* before deploy, or the page ships a
+# snapshot of whatever the packages looked like when the file was last written.
+#
+# So this builds the packages, regenerates the page from `site/build.mjs`, and
+# deploys. A page whose numbers can drift from the library it describes is
+# worth less than no page.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'packages/core/**'
+      - 'packages/styles/**'
+      - 'packages/tokens/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a queued run supersedes a pending one but never
+# cancels one mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The page inlines these three, so they must exist and be current.
+      - run: pnpm --filter @navx/tokens --filter @navx/styles --filter @navx/core build
+
+      - name: Rebuild the page from the freshly built packages
+        run: node site/build.mjs
+
+      - name: Fail if the committed page is stale
+        # The generator is deterministic, so a diff here means someone edited
+        # `site/index.html` by hand or changed a package without regenerating.
+        # Deploying the regenerated file either way, but saying so.
+        run: |
+          if ! git diff --quiet -- site/index.html; then
+            echo "::warning::site/index.html was out of date and has been regenerated for this deploy"
+            git --no-pager diff --stat -- site/index.html
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

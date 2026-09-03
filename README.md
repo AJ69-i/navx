@@ -4,7 +4,12 @@ A modern, RTL-native, accessible navigation library. Headless core, thin
 adapters for React, Vue, Svelte and Angular, a framework-free custom element,
 and a stylesheet built on CSS custom properties.
 
-MIT. In active development — see the roadmap below for what exists today.
+MIT, and shipping. Ten packages at v1.0.0 — see the roadmap below for how each was built and gated.
+
+[![npm](https://img.shields.io/npm/v/@navx/core?label=%40navx&color=0b5fa5)](https://www.npmjs.com/package/@navx/core)
+[![bundle](https://img.shields.io/badge/core-4.5%20kB%20gzipped-0b5fa5)](https://github.com/AJ69-i/navx/blob/main/.size-limit.json)
+[![baselines](https://github.com/AJ69-i/navx/actions/workflows/baselines.yml/badge.svg)](https://github.com/AJ69-i/navx/actions/workflows/baselines.yml)
+[![license](https://img.shields.io/badge/license-MIT-0b5fa5)](LICENSE)
 
 ## Packages
 
