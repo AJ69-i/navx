@@ -97,7 +97,7 @@ async function legacy() {
   });
   await page.waitForSelector('html[data-navx-ready="1"]', { timeout: 15_000 });
 
-  // Same rule the Stage 0 spec and compare-stage2 use: on mobile the drawer is
+  // Same rule the Stage 0 spec and compare-renders use: on mobile the drawer is
   // opened before a submenu, or the submenu is inside a closed panel.
   if (state === 'panel-open' || (WITH_PANEL && state !== 'rest')) {
     await page.addStyleTag({ content: FREEZE });

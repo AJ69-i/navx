@@ -17,6 +17,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./preset": {
+      "import": {
+        "types": "./dist/preset.d.ts",
+        "default": "./dist/preset.js"
+      },
+      "require": {
+        "types": "./dist/preset.d.cts",
+        "default": "./dist/preset.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -48,6 +58,13 @@
     "directory": "packages/element"
   },
   "dependencies": {
-    "@navx/core": "workspace:*"
+    "@navx/core": "workspace:*",
+    "@navx/presets": "workspace:*"
+  },
+  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped.",
+  "typesVersions": {
+    "*": {
+      "preset": ["./dist/preset.d.ts"]
+    }
   }
 }

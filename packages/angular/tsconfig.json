@@ -1,5 +1,13 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["node"] },
-  "include": ["src/**/*.ts"]
+  "compilerOptions": {
+    "types": ["node"],
+    // The secondary entry point imports the primary by package name, which is
+    // ng-packagr's convention and what it resolves at build time. Plain `tsc`
+    // cannot follow a package's self-reference before `dist` exists, so this
+    // points it at the source. It affects typechecking only — `tsconfig.lib.json`
+    // includes `src/**` alone and the built output is unchanged.
+    "paths": { "@navx/angular": ["./src/index.ts"] }
+  },
+  "include": ["src/**/*.ts", "preset/src/**/*.ts"]
 }

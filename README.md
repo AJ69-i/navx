@@ -18,11 +18,11 @@ MIT. In active development — see the roadmap below for what exists today.
 | [`@navx/svelte`](packages/svelte) | 4 | **shipping** — 429 B, a store and an action |
 | [`@navx/element`](packages/element) | 4 | **shipping** — 861 B, `<navx-nav>`, no build step |
 | [`@navx/angular`](packages/angular) | 4 | **shipping** — 2.1 kB, standalone directive, signals, APF |
-| [`@navx/presets`](packages/presets) | 5 | scaffold |
+| [`@navx/presets`](packages/presets) | 5 | **shipping** — 28 presets, 179 B each, one markup contract for all five adapters |
 
-The remaining scaffold is empty but real: it builds, typechecks, and passes
-`publint` and `attw`. An empty package that publishes cleanly is cheap;
-retrofitting a broken exports map across nine packages is not.
+All nine packages ship. Each adapter also has a `./preset` subpath carrying its
+render walker, so an app that only wants the headless hook still gets the byte
+count in the table above.
 
 ## Getting started
 
@@ -83,9 +83,53 @@ absent, so outside contributors still get a green CI.
 | 2 | The stylesheet — logical properties, container queries, ten skins as tokens | ✅ done |
 | 3 | Headless core — state machine, ARIA, keyboard, `destroy()` | ✅ done |
 | 4 | Adapters — React, Vue, Svelte, Angular, custom element | ✅ done |
-| 5 | Presets — the 46 catalogue variants as data | next |
-| 6 | Scroll behaviours, grid mega-menu, runtime theming | |
+| 5 | Presets — the catalogue as data, and one markup contract | ✅ done |
+| 6 | Scroll behaviours, grid mega-menu, runtime theming | next |
 | 7 | Docs, migration, v1.0.0 | |
+
+### Stage 5 result
+
+The 56 extracted catalogue variants collapse to **28 presets** — the rest
+differed only in content — and a preset is **179 bytes** because it holds no
+labels, no hrefs and no URLs. The catalogue's own content ships separately at
+797 bytes a variant, so `<Navx preset={…} content={…}/>` is one import and your
+bundle carries only the strings you wrote.
+
+The schema is derived rather than designed: an extractor walks the fixtures,
+reports a grammar of **64 node kinds joined by 88 nesting edges**, and fails the
+run on any element it cannot account for. It reports none.
+
+**One markup contract, and it is asserted.** `plan()` is the only place in NAVX
+that decides what nav markup looks like; the five adapters walk the tree it
+returns, and React and Vue share a single parameterised traversal because
+`toTree` takes the element factory as an argument rather than importing one.
+The gate renders all 56 variants through seven independent paths — `html()`,
+`render()`, React SSR, Vue SSR, `<navx-preset>`, the Svelte action, and
+`attach()` — and requires byte-identical canonical DOM:
+
+```
+comparisons  392       divergences  0
+```
+
+**And it reproduces the baselines.** Rendering every preset with its demo
+content and comparing against the same 292 approved Stage 0 screenshots:
+
+```
+[stage5] identical 181 · ≤0.2% 111 · >0.2% 0 · errored 0
+[stage2] identical 184 · ≤0.2% 108 · >0.2% 0 · errored 0
+```
+
+Both gates run through one tool behind `--harness`, so they cannot drift apart
+in tolerance or method. Stage 2's numbers are unchanged from before Stage 5
+touched the stylesheet, which is what makes the three-render gap meaningful: it
+is the intentional divergence, where NAVX drops legacy's `id` and ships the
+toggler and close control as real buttons.
+
+The gates found six dropped layout modifiers and one regression the planner
+itself caused — including a shared button reset whose *placement*, not
+specificity, silently shrank the drawer's close glyph from 25px to 16px in both
+harnesses. All seven, and the tooling that found them, are in
+[`docs/stage5.md`](docs/stage5.md).
 
 ### Stage 2 result
 

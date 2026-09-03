@@ -1,7 +1,7 @@
 /**
  * The three capture profiles, defined once.
  *
- * `playwright.config.ts` builds its projects from this and `compare-stage2.mjs`
+ * `playwright.config.ts` builds its projects from this and `compare-renders.mjs`
  * builds its browser contexts from it, because the Stage 2 comparison is only
  * meaningful if the render conditions are byte-for-byte the ones that produced
  * the baseline. Keeping two copies has already cost twice: a missing

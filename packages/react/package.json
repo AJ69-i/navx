@@ -17,6 +17,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./preset": {
+      "import": {
+        "types": "./dist/preset.d.ts",
+        "default": "./dist/preset.js"
+      },
+      "require": {
+        "types": "./dist/preset.d.cts",
+        "default": "./dist/preset.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -54,10 +64,17 @@
     "directory": "packages/react"
   },
   "dependencies": {
-    "@navx/core": "workspace:*"
+    "@navx/core": "workspace:*",
+    "@navx/presets": "workspace:*"
   },
   "//peerDependencies": "React 18 is the floor because useSyncExternalStore is: on 17 this adapter cannot exist without the shim, and shipping the shim would put a second store implementation in every consumer's bundle.",
   "peerDependencies": {
     "react": ">=18"
+  },
+  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped.",
+  "typesVersions": {
+    "*": {
+      "preset": ["./dist/preset.d.ts"]
+    }
   }
 }

@@ -56,7 +56,7 @@ export default defineConfig({
     video: 'off',
   },
 
-  // Shared with tools/compare-stage2.mjs, so Stage 2 renders under exactly the
+  // Shared with tools/compare-renders.mjs, so Stage 2 renders under exactly the
   // conditions that produced the baseline it is diffed against.
   projects: PROJECTS.map(({ name, device }) => ({
     name,

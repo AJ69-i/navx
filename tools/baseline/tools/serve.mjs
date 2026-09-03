@@ -50,6 +50,13 @@ const MOUNTS = [
     root: path.join(REPO_ROOT, '..', '..', 'packages', 'core', 'dist', 'index.js'),
     file: true,
   },
+  // Stage 5: the built presets package, including the per-variant demo
+  // modules. Each demo module is self-contained — tsup bundles the preset it
+  // references into it — so the browser needs no import map and no bundler.
+  {
+    prefix: '/navx/presets/',
+    root: path.join(REPO_ROOT, '..', '..', 'packages', 'presets', 'dist'),
+  },
   { prefix: '/harness-tools/', root: path.join(REPO_ROOT, 'tools') },
   { prefix: '/legacy/', root: LEGACY_ROOT },
   { prefix: '/', root: paths.harness },

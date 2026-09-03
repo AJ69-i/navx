@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAVX Stage 5 harness</title>
+
+<!-- Bootstrap and Font Awesome are loaded exactly as the Stage 0 harness loads
+     them, so the only variable between the two runs is NAVX itself. Font
+     Awesome matters here for a second reason: presets carry semantic icon
+     names, and the icon map below is what turns `home` back into
+     `fas fa-home`. That indirection is the whole point — the package names no
+     icon library, and this harness supplies the one the baselines used. -->
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/bootstrap.min.css">
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/all.css">
+
+<link rel="stylesheet" href="/navx/tokens.css">
+<link rel="stylesheet" href="/navx/navx.css">
+
+<style>
+  /* Identical determinism shims to the Stage 0 and Stage 2 harnesses. Nothing
+     here may touch .navx styling, or the comparison measures the shim. */
+  html { overflow: hidden; }
+  body {
+    margin: 0;
+    background: #ffffff;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  #filler { height: 1400px; background: #ffffff; }
+</style>
+</head>
+<body>
+
+<div id="mount"></div>
+<div id="filler"></div>
+
+<script type="module">
+/**
+ * The Stage 5 harness.
+ *
+ * Same page, same shims and the same states as `stage2.html` — but the nav is
+ * not a legacy fixture with its classes rewritten. It is
+ * `render(plan(preset, content))`: the real published planner, the real
+ * extracted data, the real DOM builder, served from `packages/presets/dist`.
+ *
+ * That is what makes the comparison worth running. Stage 2 proved the
+ * stylesheet reproduces the approved screenshots *given legacy's markup*.
+ * This proves the markup NAVX generates from a 155-byte preset reproduces
+ * them too — which is the actual promise `<Navx preset={…}/>` makes.
+ *
+ * Query params: id, state (rest|panel-open|submenu-open|submenu-nested),
+ *               panel, skin, dir.
+ */
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const state = params.get('state') || 'rest';
+  const skin = params.get('skin');
+  const dir = params.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+  const root = document.documentElement;
+
+  root.dir = dir;
+  root.lang = dir === 'rtl' ? 'ar' : 'en';
+
+  const fail = (msg) => {
+    root.setAttribute('data-navx-error', msg);
+    root.setAttribute('data-navx-ready', '1');
+  };
+
+  if (!id) return fail('missing id param');
+
+  if (skin) {
+    root.setAttribute('data-navx-skin', skin);
+    await new Promise((resolve) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `/navx/skins/${skin}.css`;
+      link.onload = link.onerror = resolve;
+      document.head.appendChild(link);
+    });
+  }
+
+  /** Semantic name → the Font Awesome classes the baselines were captured with. */
+  const ICONS = {
+    home: 'fas fa-home',
+    search: 'fas fa-search',
+    user: 'fas fa-user',
+    cart: 'fas fa-shopping-cart',
+    settings: 'fas fa-cog',
+    mail: 'fas fa-envelope',
+    menu: 'fas fa-bars',
+    'sign-in': 'fas fa-sign-in-alt',
+    facebook: 'fab fa-facebook-f',
+    twitter: 'fab fa-twitter',
+    instagram: 'fab fa-instagram',
+  };
+
+  let nav;
+  try {
+    const { plan, render } = await import('/navx/presets/index.js');
+    // The demo module carries both halves: the chrome it was written for and
+    // the catalogue's own content. Self-contained, so no import map is needed.
+    const { preset, content } = await import(`/navx/presets/demo/${id}.js`);
+    if (!preset || !content) throw new Error(`demo module ${id} exported nothing`);
+
+    const tree = plan(preset, content, { icons: ICONS, overlay: true });
+    nav = render(tree, document);
+    document.getElementById('mount').appendChild(nav);
+    root.setAttribute('data-navx-preset', preset.id);
+  } catch (err) {
+    return fail(String(err?.message || err));
+  }
+
+  // ── states ────────────────────────────────────────────────────────────────
+  // Byte-for-byte the same driver as stage2.html. It is duplicated rather than
+  // shared because the two harnesses must be able to disagree: if a future
+  // change to one silently changed the other, the comparison between them
+  // would stop being independent evidence.
+  const SUBMENU = '.navx-submenu, .navx-megamenu';
+  const open = (el) => el && el.setAttribute('data-navx-state', 'open');
+
+  const openPanel = () => {
+    open(nav.querySelector('.navx-panel'));
+    open(nav.querySelector('.navx-overlay'));
+  };
+
+  const openSubmenu = (deep) => {
+    const all = [...nav.querySelectorAll(SUBMENU)];
+    if (!all.length) return 0;
+
+    const chainTo = (leaf) => {
+      const chain = [];
+      for (let el = leaf; el && el !== nav; el = el.parentElement) {
+        if (el.matches(SUBMENU)) chain.unshift(el);
+      }
+      return chain;
+    };
+
+    const first = all[0];
+    const target = deep
+      ? all.reduce((best, s) => (chainTo(s).length > chainTo(best).length ? s : best), first)
+      : all.find((s) => chainTo(s).length === 1) ?? first;
+
+    const chain = chainTo(target);
+    for (const submenu of chain) {
+      open(submenu);
+      const trigger = submenu.previousElementSibling;
+      const item = submenu.parentElement;
+      if (item) open(item);
+      if (trigger) open(trigger.querySelector(':scope > .navx-chevron'));
+    }
+    return chain.length;
+  };
+
+  let depth = 0;
+  if (state === 'panel-open' || params.get('panel') === '1') openPanel();
+  if (state === 'submenu-open') depth = openSubmenu(false);
+  if (state === 'submenu-nested') depth = openSubmenu(true);
+  root.setAttribute('data-navx-depth-opened', String(depth));
+
+  await Promise.all([...document.images].map((img) =>
+    img.complete ? Promise.resolve() : new Promise((r) => { img.onload = img.onerror = r; })
+  ));
+  if (document.fonts?.ready) await document.fonts.ready;
+
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  root.setAttribute('data-navx-ready', '1');
+})();
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 /**
  * Where, exactly, did a render change?
  *
- * `compare-stage2.mjs` gives a percentage and `contact-sheet.mjs` gives a
+ * `compare-renders.mjs` gives a percentage and `contact-sheet.mjs` gives a
  * picture; this gives coordinates. It clusters the changed pixels of a diff PNG
  * into bounding boxes so a 92-pixel difference can be located in a 1440x900
  * screenshot without squinting — and, more usefully, so the same 92 pixels

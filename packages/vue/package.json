@@ -1,7 +1,7 @@
 {
   "name": "@navx/vue",
   "version": "0.0.0",
-  "description": "Stage 4 — Vue adapter.",
+  "description": "Stage 4 \u2014 Vue adapter.",
   "license": "MIT",
   "type": "module",
   "sideEffects": ["*.css"],
@@ -15,6 +15,16 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./preset": {
+      "import": {
+        "types": "./dist/preset.d.ts",
+        "default": "./dist/preset.js"
+      },
+      "require": {
+        "types": "./dist/preset.d.cts",
+        "default": "./dist/preset.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -49,10 +59,17 @@
     "directory": "packages/vue"
   },
   "dependencies": {
-    "@navx/core": "workspace:*"
+    "@navx/core": "workspace:*",
+    "@navx/presets": "workspace:*"
   },
   "//peerDependencies": "effectScope/onScopeDispose landed in 3.2, and the composable ties its teardown to the scope rather than to onUnmounted so it works outside a component too.",
   "peerDependencies": {
     "vue": ">=3.2"
+  },
+  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped.",
+  "typesVersions": {
+    "*": {
+      "preset": ["./dist/preset.d.ts"]
+    }
   }
 }

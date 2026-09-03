@@ -124,6 +124,43 @@
   outline-offset: -2px;
 }
 
+/**
+ * Controls legacy shipped as `<div>` and `<span>`, which are real buttons now.
+ *
+ * That is Stage 3's decision — `aria-expanded` has to live on something
+ * focusable, and a `<div>` with `role="button"` is a worse version of a
+ * button. These seven declarations take the UA styling back off, so the
+ * promotion costs nothing visually.
+ *
+ * The chevron carried its own copy of this block until Stage 5's planner
+ * started emitting real buttons for the *toggler* and the *close* control too,
+ * and the pixel gate found them wearing UA borders, backgrounds and font. One
+ * shared rule now, held at a single class by `:where()` so every component
+ * rule below still wins.
+ *
+ * Position matters as much as specificity here, and it took the gate twice to
+ * say so. Held at one class, this rule *ties* with every component rule that
+ * styles the same controls, so the later declaration wins — and both
+ * `.navx-panel-close` and `.navx-toggler` are declared further down. Placed
+ * anywhere below them, `font: inherit` beat `font-size: 25px` and the drawer's
+ * close glyph silently shrank from 25px to 16px in *both* harnesses: 44
+ * renders out of pixel-identical, with nothing visibly broken. It belongs
+ * here, with the other resets, above everything it resets.
+ *
+ * Dropping to zero specificity with `:where(.navx .navx-toggler, …)` would
+ * also fix the tie, and would be wrong: Stage 2 holds resets at exactly one
+ * class so they still beat a host page's `button { }` type selector.
+ */
+.navx :where(.navx-toggler, .navx-panel-close, .navx-chevron) {
+  appearance: none;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    LAYOUT — header, panel, overlay, menu
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -435,26 +472,47 @@
   }
 }
 
-/* Link with a leading icon. */
-.navx-link > i {
+/* Link with a leading icon.
+ *
+ * Descendant, not child. An item that owns a submenu makes `.navx-link` the
+ * flex *row* — an `<a>` and a `<button class="navx-chevron">` side by side —
+ * because Stage 3 promoted the chevron to a real button and a `<button>`
+ * inside an `<a>` is invalid HTML and nested-interactive content. The icon
+ * then sits one level deeper, inside the `<a>`. Relaxing to a descendant
+ * selector matches both shapes at the same specificity, so the plain
+ * `<a class="navx-link">` case is untouched. */
+.navx-link i {
   inline-size: var(--navx-link-icon-inline-size);
   font-size: var(--navx-link-icon-font-size);
   line-height: 0;
   text-align: center;
 }
 
-.navx-link > i[class*="fa"] {
+.navx-link i[class*="fa"] {
   font-size: var(--navx-link-icon-font-size-fa);
 }
 
-.navx-link > i + span {
+.navx-link i + span {
   padding-inline-start: var(--navx-size-5);
 }
 
 @container navx (min-width: 992px) {
-  .navx-link > i {
+  .navx-link i {
     inline-size: auto;
   }
+}
+
+/**
+ * The anchor inside a row-shaped link.
+ *
+ * Only matches the disclosure shape, where `.navx-link` is a `<div>` holding
+ * the `<a>` and the chevron. It re-establishes on the anchor the alignment the
+ * row used to provide for the icon and label directly, so the two shapes are
+ * pixel-identical rather than merely similar.
+ */
+.navx-link > a {
+  display: flex;
+  align-items: center;
 }
 
 /* ── chevron ───────────────────────────────────────────────────────────── */
@@ -480,14 +538,6 @@
  * all 292 baselines.
  */
 .navx-chevron {
-  appearance: none;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-
   position: absolute;
   inset-block-start: 0;
   inset-inline-end: 0;

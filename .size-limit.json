@@ -64,5 +64,41 @@
     "path": ["packages/core/dist/index.js", "packages/react/dist/index.js"],
     "limit": "5.5 kB",
     "gzip": true
+  },
+  {
+    "name": "@navx/presets (planner + 28 presets)",
+    "path": "packages/presets/dist/index.js",
+    "limit": "6 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/presets demo (one variant)",
+    "path": "packages/presets/dist/demo/navigation15.js",
+    "limit": "1 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/react/preset",
+    "path": "packages/react/dist/preset.js",
+    "limit": "1.5 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/vue/preset",
+    "path": "packages/vue/dist/preset.js",
+    "limit": "1.5 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/svelte/preset",
+    "path": "packages/svelte/dist/preset.js",
+    "limit": "1 kB",
+    "gzip": true
+  },
+  {
+    "name": "@navx/element/preset",
+    "path": "packages/element/dist/preset.js",
+    "limit": "1.2 kB",
+    "gzip": true
   }
 ]

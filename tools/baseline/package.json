@@ -15,7 +15,7 @@
     "baseline:check": "playwright test",
     "baseline:report": "playwright show-report",
     "stage0": "npm run extract && npm run baseline:update",
-    "stage2": "node tools/compare-stage2.mjs",
+    "stage2": "node tools/compare-renders.mjs --harness stage2",
     "stage2:sheet": "node tools/contact-sheet.mjs",
     "stage2:probe": "node tools/probe-geometry.mjs",
     "stage2:boxes": "node tools/diff-boxes.mjs",
@@ -25,14 +25,28 @@
     "stage2:rtl": "node tools/rtl-audit.mjs",
     "stage2:rtl-sheet": "node tools/rtl-sheet.mjs",
     "stage3:leak": "node tools/leak-test.mjs",
-    "stage3:a11y": "node tools/a11y-test.mjs"
+    "stage3:a11y": "node tools/a11y-test.mjs",
+    "stage5:extract": "node tools/extract-presets.mjs",
+    "stage5:identity": "node tools/stage5-identity.mjs",
+    "stage5": "node tools/compare-renders.mjs --harness stage5"
   },
   "//devDependencies": "Playwright is pinned exactly, not ranged. Chromium build differences change text rasterisation, which silently invalidates every baseline. Upgrading is a deliberate act that requires re-approving the snapshots.",
   "devDependencies": {
+    "@navx/core": "workspace:*",
+    "@navx/element": "workspace:*",
+    "@navx/presets": "workspace:*",
+    "@navx/react": "workspace:*",
+    "@navx/svelte": "workspace:*",
+    "@navx/vue": "workspace:*",
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
+    "@vue/server-renderer": "^3.5.13",
     "axe-core": "^4.13.0",
+    "jsdom": "^25.0.1",
     "pixelmatch": "6.0.0",
-    "pngjs": "7.0.0"
+    "pngjs": "7.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vue": "^3.5.13"
   }
 }

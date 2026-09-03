@@ -12,7 +12,23 @@
  * triaged as either a regression to fix or an improvement to approve. The
  * baselines are read, never written: Stage 0's snapshots stay authoritative.
  *
- *   node tools/compare-stage2.mjs [--project desktop] [--filter navigation1]
+ *   node tools/compare-renders.mjs --harness stage2 [--project desktop] [--filter navigation1]
+ *   node tools/compare-renders.mjs --harness stage5
+ *
+ * `--harness` chooses which page renders the nav, and that is the only
+ * difference between the two gates:
+ *
+ *   stage2  a legacy fixture with its classes mechanically rewritten. Proves
+ *           the stylesheet reproduces the approved screenshots given legacy's
+ *           own markup.
+ *   stage5  render(plan(preset, content)) from the published packages. Proves
+ *           the markup NAVX *generates* from a 155-byte preset reproduces them
+ *           too — which is the promise `<Navx preset={…}/>` actually makes.
+ *
+ * One tool rather than two near-identical ones, because the value here is that
+ * both gates compare against the same authoritative baselines with the same
+ * tolerances. Two copies would drift and the comparison between them would
+ * quietly stop meaning anything.
  */
 
 import { existsSync } from 'node:fs';
@@ -27,7 +43,16 @@ import { PROJECTS, contextFor } from './projects.mjs';
 const PORT = harnessPort();
 const PLATFORM = process.platform === 'darwin' ? 'darwin' : 'linux';
 const BASELINES = path.join(REPO_ROOT, 'tests', '__baselines__', PLATFORM);
-const OUT = path.join(REPO_ROOT, 'reference', 'stage2');
+const HARNESS = (() => {
+  const i = process.argv.indexOf('--harness');
+  const value = i === -1 ? 'stage2' : process.argv[i + 1];
+  if (value !== 'stage2' && value !== 'stage5') {
+    console.error(`--harness must be stage2 or stage5, got ${JSON.stringify(value)}`);
+    process.exit(2);
+  }
+  return value;
+})();
+const OUT = path.join(REPO_ROOT, 'reference', HARNESS);
 
 const args = process.argv.slice(2);
 const argOf = (name) => {
@@ -129,7 +154,7 @@ async function main() {
           continue;
         }
 
-        const url = `http://localhost:${PORT}/stage2.html?id=${variant.id}&state=${state}${
+        const url = `http://localhost:${PORT}/${HARNESS}.html?id=${variant.id}&state=${state}${
           panel ? '&panel=1' : ''
         }${skin ? `&skin=${skin}` : ''}`;
         await page.goto(url, { waitUntil: 'load' });
@@ -185,7 +210,7 @@ async function main() {
   const notable = compared.filter((r) => r.ratio > MAX_RATIO);
 
   console.log(
-    `\ncompared ${compared.length} renders against ${PLATFORM} baselines${missingNames.length ? ` (${missingNames.length} with no Stage 0 baseline)` : ''}`,
+    `\n[${HARNESS}] compared ${compared.length} renders against ${PLATFORM} baselines${missingNames.length ? ` (${missingNames.length} with no Stage 0 baseline)` : ''}`,
   );
   console.log(`  identical (0 px)      ${identical.length}`);
   const pct = `${(MAX_RATIO * 100).toFixed(1)}%`;

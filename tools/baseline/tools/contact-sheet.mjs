@@ -1,7 +1,7 @@
 /**
  * Triage aid — stacks baseline / actual / diff into one PNG.
  *
- * `compare-stage2.mjs` tells you *how much* a render moved; this tells you
+ * `compare-renders.mjs` tells you *how much* a render moved; this tells you
  * *what* moved. Three panes, same crop, top to bottom: the approved Stage 0
  * baseline, the Stage 2 render, and the pixelmatch diff. Cropping matters
  * because the interesting region is usually 200px tall inside a 1440x900

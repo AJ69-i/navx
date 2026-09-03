@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node test/compile-check.mjs",
     "publint": "publint dist",
-    "attw": "attw --pack ./dist --ignore-rules cjs-resolves-to-esm"
+    "attw": "attw --pack ./dist --profile esm-only"
   },
   "devDependencies": {
     "@angular/common": "^22.1.5",
@@ -37,7 +37,8 @@
   },
   "//typescript": "NOT catalog: \u2014 Angular's compiler-cli pins >=6.0 <6.1 and cannot use the workspace's 7.x. See README.md.",
   "dependencies": {
-    "@navx/core": "workspace:*"
+    "@navx/core": "workspace:*",
+    "@navx/presets": "workspace:*"
   },
   "peerDependencies": {
     "@angular/core": ">=18",
@@ -47,5 +48,6 @@
     "@angular/common": {
       "optional": true
     }
-  }
+  },
+  "//attw": "--profile esm-only rather than --ignore-rules cjs-resolves-to-esm. Angular libraries have been ESM-only since Angular 13, so node10 and require() resolution are not targets \u2014 declaring that is honest, where silencing one rule at a time would also have masked the secondary entry point node10 failure that ng-packagr cannot avoid."
 }

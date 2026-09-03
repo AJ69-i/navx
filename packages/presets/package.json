@@ -17,6 +17,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./demo/*": {
+      "import": {
+        "types": "./dist/demo/*.d.ts",
+        "default": "./dist/demo/*.js"
+      },
+      "require": {
+        "types": "./dist/demo/*.d.cts",
+        "default": "./dist/demo/*.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",

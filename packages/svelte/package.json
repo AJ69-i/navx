@@ -1,7 +1,7 @@
 {
   "name": "@navx/svelte",
   "version": "0.0.0",
-  "description": "Stage 4 — Svelte adapter.",
+  "description": "Stage 4 \u2014 Svelte adapter.",
   "license": "MIT",
   "type": "module",
   "sideEffects": ["*.css"],
@@ -15,6 +15,16 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./preset": {
+      "import": {
+        "types": "./dist/preset.d.ts",
+        "default": "./dist/preset.js"
+      },
+      "require": {
+        "types": "./dist/preset.d.cts",
+        "default": "./dist/preset.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -49,10 +59,17 @@
     "directory": "packages/svelte"
   },
   "dependencies": {
-    "@navx/core": "workspace:*"
+    "@navx/core": "workspace:*",
+    "@navx/presets": "workspace:*"
   },
   "//peerDependencies": "Nothing is imported from svelte: the store contract and the action contract are structural, which is why one build serves 3, 4 and 5 (including runes mode).",
   "peerDependencies": {
     "svelte": ">=3"
+  },
+  "//typesVersions": "node10 resolution (TypeScript moduleResolution:\"node\") predates `exports` and cannot follow ./preset into dist. This maps it, so the subpath is typed for older consumers instead of silently untyped.",
+  "typesVersions": {
+    "*": {
+      "preset": ["./dist/preset.d.ts"]
+    }
   }
 }
