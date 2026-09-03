@@ -41,6 +41,16 @@ jobs:
       - name: Test
         run: pnpm test
 
+      # Moved here from `baselines.yml`. It needs jsdom and the built adapters —
+      # no browser, no legacy tree — but every step in that workflow is guarded
+      # behind the private legacy checkout, including the ones that install pnpm
+      # and run `pnpm build`. Left unguarded there, it ran on a runner with no
+      # toolchain and failed on every push for a reason that had nothing to do
+      # with the assertion it makes: all five adapters render byte-identical
+      # DOM, which is the whole claim behind one planner and five thin walkers.
+      - name: Cross-adapter DOM identity
+        run: pnpm --filter @navx/baseline-harness run stage5:identity
+
       # The two checks that catch "installs fine, breaks in the consumer's
       # bundler" — wrong export condition order, missing CJS types, a subpath
       # the README documents but the exports map hides.

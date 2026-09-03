@@ -129,12 +129,6 @@ jobs:
           npx wait-on http://localhost:4317/fixtures/manifest.json
           pnpm --filter @navx/baseline-harness run stage5
 
-      # No browser and no legacy tree: this one asserts that every adapter
-      # renders byte-identical DOM, which is the whole claim behind having one
-      # planner and five thin walkers.
-      - name: Stage 5 — cross-adapter DOM identity
-        run: pnpm --filter @navx/baseline-harness run stage5:identity
-
       # Stage 6's two features, in a real browser: scroll-spy needs a page that
       # actually scrolls and an IntersectionObserver, and overlayColor is a
       # claim about the token reaching the rendered overlay.

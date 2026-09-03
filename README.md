@@ -26,7 +26,7 @@ MIT, and shipping. Ten packages at v1.0.0 — see the roadmap below for how each
 | [`@navx/presets`](packages/presets) | 5 | **shipping** — 28 presets, 179 B each, one markup contract for all five adapters |
 | [`@navx/codemod`](packages/codemod) | 7 | **shipping** — the migration as a command, using the table the visual gate validates |
 
-All nine packages ship. Each adapter also has a `./preset` subpath carrying its
+All ten packages ship. Each adapter also has a `./preset` subpath carrying its
 render walker, so an app that only wants the headless hook still gets the byte
 count in the table above.
 
