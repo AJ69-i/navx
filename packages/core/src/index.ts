@@ -1,13 +1,38 @@
 /**
- * @navx/core — scaffold.
+ * @navx/core — the headless navigation core.
  *
- * Stage 3 — the headless state machine: behaviour, ARIA and the keyboard model.
+ * Two layers, and the boundary between them is the point:
  *
- * This package exists from Stage 1 so the workspace graph, the build, the
- * exports contract and the CI package checks are exercised on it before it
- * holds any code. An empty package that publishes cleanly is cheap; retrofitting
- * a broken exports map across eight packages is not.
+ *   createNav()  a pure state machine. No DOM, no globals, SSR-safe, and
+ *                testable in Node with no jsdom.
+ *   attach()     the only module that touches a document. One delegated
+ *                listener per event type, one AbortController, and a teardown
+ *                that returns the DOM to exactly what it was.
+ *
+ * Framework adapters take the machine and render it themselves; vanilla and
+ * custom-element consumers take `attach()`. Neither reimplements the logic.
+ *
+ * @example
+ * ```ts
+ * import { createNav, attach } from '@navx/core';
+ *
+ * const nav = createNav();
+ * const detach = attach(document.querySelector('.navx')!, nav);
+ *
+ * nav.subscribe((state) => console.log(state.openPath));
+ * detach(); // every listener, observer and timer gone; DOM restored
+ * ```
  */
-export const name = '@navx/core' as const;
-export const stage =
-  'Stage 3 — the headless state machine: behaviour, ARIA and the keyboard model.' as const;
+
+export { createNav, isOpen, reduce } from './machine.js';
+export type {
+  NavEvent,
+  NavListener,
+  NavMachine,
+  NavMachineConfig,
+  NavMode,
+  NavState,
+} from './machine.js';
+
+export { attach } from './attach.js';
+export type { AttachOptions } from './attach.js';

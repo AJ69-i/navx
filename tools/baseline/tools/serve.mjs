@@ -43,6 +43,13 @@ const MOUNTS = [
     prefix: '/navx/skins/',
     root: path.join(REPO_ROOT, '..', '..', 'packages', 'tokens', 'dist', 'skins'),
   },
+  // Stage 3: the built core, so the lifecycle harness exercises the module that
+  // would actually be published rather than the TypeScript source.
+  {
+    prefix: '/navx/core.js',
+    root: path.join(REPO_ROOT, '..', '..', 'packages', 'core', 'dist', 'index.js'),
+    file: true,
+  },
   { prefix: '/harness-tools/', root: path.join(REPO_ROOT, 'tools') },
   { prefix: '/legacy/', root: LEGACY_ROOT },
   { prefix: '/', root: paths.harness },

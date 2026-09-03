@@ -12,6 +12,12 @@
     "gzip": true
   },
   {
+    "name": "@navx/core (machine + DOM binding)",
+    "path": "packages/core/dist/index.js",
+    "limit": "4.5 kB",
+    "gzip": true
+  },
+  {
     "name": "@navx/styles (css, minified)",
     "path": "packages/styles/dist/navx.min.css",
     "limit": "5 kB",

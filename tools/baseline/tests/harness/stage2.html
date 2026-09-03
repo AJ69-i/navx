@@ -94,14 +94,22 @@ import { CLASS_MAP, ATTR_MAP, DROPPED, transformInPage } from '/harness-tools/tr
     root.setAttribute('data-navx-unmapped', report.unmapped.join(','));
   }
 
-  // Parts the legacy plugin injected at runtime, which Stage 3's core will own.
-  // Created here so the CSS has the same DOM to style as legacy did.
+  // The parts legacy's plugin injected at runtime. Stage 3's core injects
+  // nothing at all — these belong to the markup, and Stage 5's presets will
+  // emit them — so the harness stands in for the preset here.
+  //
+  // The chevron is a <button>, not legacy's <span>: the link navigates and the
+  // button discloses, which is the APG disclosure-navigation pattern and the
+  // only way `aria-expanded` can live on something focusable. The Stage 2 gate
+  // is what proves the promotion moves no pixels.
   const SUBMENU = '.navx-submenu, .navx-megamenu';
   for (const submenu of nav.querySelectorAll(SUBMENU)) {
     const trigger = submenu.previousElementSibling;
-    if (!trigger || trigger.querySelector(':scope > .navx-chevron')) continue;
-    const chevron = document.createElement('span');
+    if (!trigger || trigger.parentElement?.querySelector(':scope > .navx-chevron')) continue;
+    const chevron = document.createElement('button');
     chevron.className = 'navx-chevron';
+    chevron.type = 'button';
+    chevron.setAttribute('aria-expanded', 'false');
     trigger.appendChild(chevron);
   }
 
@@ -142,7 +150,10 @@ import { CLASS_MAP, ATTR_MAP, DROPPED, transformInPage } from '/harness-tools/tr
       open(submenu);
       const trigger = submenu.previousElementSibling;
       const item = submenu.parentElement;
-      if (item) item.setAttribute('data-navx-current', '');
+      // `data-navx-state`, not `data-navx-current`: legacy's `is-active` meant
+      // both "current page" and "menu open beneath me", and the new API keeps
+      // them apart. This is the state @navx/core writes.
+      if (item) open(item);
       if (trigger) open(trigger.querySelector(':scope > .navx-chevron'));
     }
     return chain.length;

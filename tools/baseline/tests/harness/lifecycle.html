@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAVX lifecycle harness</title>
+
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/bootstrap.min.css">
+<link rel="stylesheet" href="/legacy/Catalogue/catalogue_files/all.css">
+
+<style>
+  html { overflow: hidden; }
+  body { margin: 0; background: #fff; font-family: system-ui, sans-serif; }
+  #filler { height: 1400px; }
+</style>
+</head>
+<body>
+
+<div id="mount"></div>
+<div id="filler"></div>
+
+<script>
+/**
+ * Lifecycle harness — the same fixture driven by either implementation, so the
+ * leak test compares like with like.
+ *
+ * `?impl=legacy` runs the original plugin; `?impl=navx` runs @navx/core. Both
+ * expose the same three verbs on `window.__lifecycle`:
+ *
+ *   init()      construct and attach
+ *   teardown()  whatever that implementation offers as teardown, then detach
+ *               the element from the document and drop every reference to it
+ *   ref()       a WeakRef to the nav element, so a forced GC can prove whether
+ *               anything still holds it
+ *
+ * Legacy has no destroy(), so its teardown is the honest best a consumer could
+ * do: remove the node and hope. That is exactly the SPA route-unmount case.
+ */
+window.__lifecycle = (() => {
+  const params = new URLSearchParams(location.search);
+  const impl = params.get('impl') === 'legacy' ? 'legacy' : 'navx';
+  const fixture = params.get('id') || 'ex-hover';
+
+  let navRef = null;      // WeakRef, the only thing that outlives teardown
+
+  let detach = null;      // navx teardown
+  let machine = null;
+  let mounted = null;     // strong ref, nulled by teardown
+  let legacyLoaded = false;
+
+  const loadScript = (src) =>
+    new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error(`failed to load ${src}`));
+      document.head.appendChild(s);
+    });
+
+  async function mountMarkup() {
+    const res = await fetch(`/fixtures/${fixture}.html`);
+    if (!res.ok) throw new Error(`fixture ${fixture} → ${res.status}`);
+    document.getElementById('mount').innerHTML = await res.text();
+    return document.querySelector('.navigation, .navx');
+  }
+
+  return {
+    impl,
+
+    async init() {
+      const el = await mountMarkup();
+      if (!el) throw new Error('no nav root in fixture');
+      mounted = el;
+      navRef = new WeakRef(el);
+
+      if (impl === 'legacy') {
+        // Tracked with a flag, not `if (!window.Navigation)`: Chromium ships a
+        // native `Navigation` interface, so that guard is always truthy and the
+        // plugin never loads. Legacy claiming a global that the platform later
+        // took is its own small lesson about `root[pluginName] = ...`.
+        if (!legacyLoaded) {
+          await loadScript('/legacy/Files/js/navigation.js');
+          legacyLoaded = true;
+        }
+        // The legacy constructor writes its whole API onto the element.
+        window.__legacyInstance = new window.Navigation(el, {});
+        return;
+      }
+
+      const [{ CLASS_MAP, ATTR_MAP, DROPPED, transformInPage }, core] = await Promise.all([
+        import('/harness-tools/transform-legacy.mjs'),
+        import('/navx/core.js'),
+      ]);
+      transformInPage(el, { classMap: CLASS_MAP, attrMap: ATTR_MAP, dropped: DROPPED });
+
+      // The markup contract Stage 5's presets will emit: a disclosure button
+      // beside each link. The core creates nothing.
+      for (const submenu of el.querySelectorAll('.navx-submenu, .navx-megamenu')) {
+        const trigger = submenu.previousElementSibling;
+        if (!trigger || trigger.parentElement?.querySelector(':scope > .navx-chevron')) continue;
+        const chevron = document.createElement('button');
+        chevron.className = 'navx-chevron';
+        chevron.type = 'button';
+        trigger.appendChild(chevron);
+      }
+      if (!el.querySelector('.navx-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'navx-overlay';
+        el.appendChild(overlay);
+      }
+
+      machine = core.createNav();
+      detach = core.attach(el, machine);
+    },
+
+    teardown() {
+      if (impl === 'navx') {
+        detach?.();
+        machine?.dispose();
+        detach = null;
+        machine = null;
+      } else {
+        // There is no destroy() to call. A consumer's only option is to drop
+        // the node, which is the whole point of the test.
+        window.__legacyInstance = null;
+      }
+      mounted?.remove();
+      mounted = null;
+      document.getElementById('mount').innerHTML = '';
+    },
+
+    /**
+     * Whether the collector has reclaimed the element.
+     *
+     * Called exactly once, after CDP has forced a full collection across both
+     * heaps — never in a polling loop. `WeakRef.deref()` is specified to keep
+     * its referent alive for the remainder of the current job, so asking
+     * repeatedly resurrects the element every time and the answer can only
+     * ever be "still here".
+     */
+    confirmCollected() {
+      return navRef !== null && navRef.deref() === undefined;
+    },
+  };
+})();
+</script>
+</body>
+</html>

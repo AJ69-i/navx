@@ -25,7 +25,7 @@
   "scripts": {
     "build": "tsup && node ../../scripts/emit-types.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests yet\"",
+    "test": "vitest run",
     "publint": "publint",
     "attw": "attw --pack ."
   },
@@ -34,7 +34,8 @@
     "@types/node": "catalog:",
     "publint": "0.2.12",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",

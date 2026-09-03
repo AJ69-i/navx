@@ -12,7 +12,7 @@ MIT. In active development — see the roadmap below for what exists today.
 |---|---|---|
 | [`@navx/tokens`](packages/tokens) | 1 | **shipping** — 201 tokens, dark theme, RTL, ten skins, 2.3 kB gzipped |
 | [`@navx/styles`](packages/styles) | 2 | **shipping** — 4.1 kB gzipped, zero `!important`, zero physical-direction properties |
-| [`@navx/core`](packages/core) | 3 | scaffold |
+| [`@navx/core`](packages/core) | 3 | **shipping** — 4.2 kB gzipped, provable `detach()`, full keyboard + ARIA |
 | [`@navx/react`](packages/react) · [`vue`](packages/vue) · [`svelte`](packages/svelte) · [`angular`](packages/angular) · [`element`](packages/element) | 4 | scaffold |
 | [`@navx/presets`](packages/presets) | 5 | scaffold |
 
@@ -77,8 +77,8 @@ absent, so outside contributors still get a green CI.
 | 0 | Baselines and safety net | ✅ done |
 | 1 | Monorepo, build, CI, tokens | ✅ done |
 | 2 | The stylesheet — logical properties, container queries, ten skins as tokens | ✅ done |
-| 3 | Headless core — state machine, ARIA, keyboard, `destroy()` | next |
-| 4 | Adapters | |
+| 3 | Headless core — state machine, ARIA, keyboard, `destroy()` | ✅ done |
+| 4 | Adapters | next |
 | 5 | Presets — the 46 catalogue variants as data | |
 | 6 | Scroll behaviours, grid mega-menu, runtime theming | |
 | 7 | Docs, migration, v1.0.0 | |

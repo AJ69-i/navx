@@ -2,7 +2,7 @@
   "name": "@navx/baseline-harness",
   "version": "0.0.0",
   "private": true,
-  "description": "Stage 0 \u2014 captures visual baselines from the legacy NAVX source so every later stage has a regression net. Reads legacy from NAVX_LEGACY_ROOT; never vendors it.",
+  "description": "Stage 0 — captures visual baselines from the legacy NAVX source so every later stage has a regression net. Reads legacy from NAVX_LEGACY_ROOT; never vendors it.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -23,12 +23,15 @@
     "stage2:layers": "node tools/layer-loss.mjs",
     "stage2:utilities": "node tools/assert-utilities.mjs",
     "stage2:rtl": "node tools/rtl-audit.mjs",
-    "stage2:rtl-sheet": "node tools/rtl-sheet.mjs"
+    "stage2:rtl-sheet": "node tools/rtl-sheet.mjs",
+    "stage3:leak": "node tools/leak-test.mjs",
+    "stage3:a11y": "node tools/a11y-test.mjs"
   },
   "//devDependencies": "Playwright is pinned exactly, not ranged. Chromium build differences change text rasterisation, which silently invalidates every baseline. Upgrading is a deliberate act that requires re-approving the snapshots.",
   "devDependencies": {
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
+    "axe-core": "^4.13.0",
     "pixelmatch": "6.0.0",
     "pngjs": "7.0.0"
   }
