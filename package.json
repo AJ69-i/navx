@@ -17,6 +17,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "size": "turbo run build && size-limit",
+    "//preview": "Rebuilds the packages the page inlines, then the page, then serves. Skipping the package build is how a preview ends up showing yesterday stylesheet inside today HTML.",
+    "preview": "pnpm --filter @navx/tokens --filter @navx/styles --filter @navx/core --filter @navx/presets build && node site/serve.mjs",
     "//package": "`run publint`, not `exec publint`: @navx/angular publishes from dist/ (ng-packagr writes the real manifest there), so only the package itself knows which directory to lint. `exec` checked its source folder and reported a false suggestion while leaving the published artifact unchecked.",
     "package": "turbo run build && pnpm --filter \"./packages/*\" run publint && pnpm --filter \"./packages/*\" run attw",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm package && pnpm size",

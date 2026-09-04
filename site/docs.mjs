@@ -348,6 +348,25 @@ const demo = (markup, { skin = null, dir = null, theme = null, height = null } =
   return `<div ${attrs}>${markup}</div>`;
 };
 
+/* ── option tables ───────────────────────────────────────────────────────── */
+
+const table = (rows) => `
+<div class="dtable-wrap">
+<table class="dtable">
+<thead><tr><th>Option</th><th>Type</th><th>Default</th><th>What it does</th></tr></thead>
+<tbody>
+  ${rows
+    .map(
+      ([name, type, dflt, description]) =>
+        `<tr><td><code>${esc(name)}</code></td><td><code>${esc(type)}</code></td><td>${
+          dflt ? `<code>${esc(dflt)}</code>` : '—'
+        }</td><td>${description}</td></tr>`,
+    )
+    .join('\n    ')}
+</tbody>
+</table>
+</div>`;
+
 /* ── card ─────────────────────────────────────────────────────────────────── */
 
 const card = ({ title, note, live, code, markup, meta = [] }) => `
@@ -632,6 +651,10 @@ const detach = attach(root, createNav(), { trigger: 'click' });`,
        <a href="https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/">Disclosure Navigation</a>
        pattern — not <code>role="menubar"</code>, which promises arrow-key semantics a website
        navigation does not have.</p>
+    <p>These demos run <a href="#options-nav"><code>multiBranch: true</code></a>, so two branches can
+       be open at once and a closed parent remembers what was inside it. Open <em>Lines</em>, open
+       something inside it, close <em>Lines</em>, open it again — the sub-tree comes back. The default
+       is a plain accordion; the hero demo is on it.</p>
   </div>
   ${submenuCards.join('\n')}
 </div>
@@ -674,6 +697,51 @@ detach();`,
     ),
     markup: null,
   })}
+</div>
+
+<div class="dgroup" id="behaviour-stacking">
+  <div class="dgroup-head">
+    <h3>Where a drawer goes wrong in a real app</h3>
+    <p>The drawer is <code>position: fixed</code> at <code>z-index: var(--navx-panel-z-index)</code>,
+       which is <code>400</code>. That is above ordinary page chrome and below anything you deliberately
+       put on top. It is also the one part of this library that an unrelated line of <em>your</em> CSS can
+       break, and the failure looks like a bug in the drawer rather than in the ancestor causing it.</p>
+    <p>Both of these were hit while building this page, which is why they are written down.</p>
+  </div>
+  ${table([
+    [
+      'transform',
+      'on any ancestor',
+      '',
+      'A transformed element is a <strong>containing block</strong> for <code>position: fixed</code>. The drawer stops being fixed to the viewport and becomes fixed to that ancestor — so it opens <em>inside</em> a card, clipped, instead of over the page. <code>filter</code>, <code>backdrop-filter</code>, <code>perspective</code>, <code>contain: paint</code> and <code>will-change</code> on those properties all do the same thing.',
+    ],
+    [
+      'z-index',
+      'on any ancestor',
+      '',
+      'A positioned ancestor with a numeric <code>z-index</code> creates a <strong>stacking context</strong>, and the drawer&rsquo;s 400 is then resolved <em>inside</em> it. An ancestor at <code>z-index: 5</code> puts the whole subtree — drawer included — under your sticky header at 40. The number on the drawer is irrelevant; only the outermost context competes.',
+    ],
+    [
+      'overflow',
+      'on any ancestor',
+      '',
+      'Does <em>not</em> clip a fixed drawer, and is the one people suspect first. <code>overflow: hidden</code> on a wrapper is harmless here — unless that wrapper also has a transform, in which case the transform is what did it.',
+    ],
+  ])}
+  <p class="dnote">Diagnosing it: the drawer&rsquo;s geometry will look correct in devtools — full viewport
+     height, flush to the edge — while it paints underneath something. Geometry is not paint order. Ask the
+     browser instead: <code>document.elementFromPoint(x, y)</code> at a point both cover tells you which one
+     actually won.</p>
+  ${block(
+    `/* Raise the drawer above your own chrome if you need to. */
+.navx {
+  --navx-panel-z-index: 9000;
+  --navx-overlay-z-index: 8999;
+}
+
+/* But check for a trapping ancestor first — if one exists, no value helps. */`,
+    { lang: 'css' },
+  )}
 </div>
 
 <div class="dgroup" id="behaviour-spy">
@@ -765,23 +833,6 @@ machine.getState().activeId; // 'features' | null`,
 
   /* ── options tables ─────────────────────────────────────────────────── */
 
-  const table = (rows) => `
-<div class="dtable-wrap">
-<table class="dtable">
-  <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>What it does</th></tr></thead>
-  <tbody>
-    ${rows
-      .map(
-        ([name, type, dflt, description]) =>
-          `<tr><td><code>${esc(name)}</code></td><td><code>${esc(type)}</code></td><td>${
-            dflt ? `<code>${esc(dflt)}</code>` : '—'
-          }</td><td>${description}</td></tr>`,
-      )
-      .join('\n    ')}
-  </tbody>
-</table>
-</div>`;
-
   const options = `
 <div class="dgroup" id="options-attach">
   <div class="dgroup-head">
@@ -819,6 +870,42 @@ machine.getState().activeId; // 'features' | null`,
     ['labelToggler', 'string', "'Menu'", 'Accessible name for the panel toggler.'],
     ['labelClose', 'string', "'Close'", 'Accessible name for the panel close button.'],
   ])}
+</div>
+
+<div class="dgroup" id="options-nav">
+  <div class="dgroup-head">
+    <h3><code>createNav(config)</code></h3>
+    <p>The machine. Two options, and the second one changes what kind of component you have.</p>
+  </div>
+  ${table([
+    [
+      'mode',
+      "'bar' | 'panel'",
+      "'panel'",
+      'Starting mode. <code>attach()</code> corrects this from the stylesheet on first read, so it only matters for the first frame of an SSR render.',
+    ],
+    [
+      'multiBranch',
+      'boolean',
+      'false',
+      'Let sibling branches be open at once, and remember a closed parent&rsquo;s children — reopen it and the sub-tree comes back exactly as it was. The default is a standard accordion: one branch at a time, and closing a parent forgets what was inside it. <strong>Every demo in this documentation runs with it on;</strong> the one in the hero does not, so you can compare.',
+    ],
+  ])}
+  ${block(
+    `import { createNav, attach } from '@navx/core';
+
+// A standard accordion — one branch open at a time.
+const accordion = createNav();
+
+// Multi-branch: siblings coexist, and a closed parent remembers.
+const tree = createNav({ multiBranch: true });
+
+attach(root, tree);`,
+    { lang: 'ts' },
+  )}
+  <p class="dnote">Visibility is <em>every ancestor expanded</em>, not a flag per node — which is why
+     reopening a parent restores its children without the library keeping a separate memo that could
+     fall out of step with the tree.</p>
 </div>
 
 <div class="dgroup" id="options-spy">

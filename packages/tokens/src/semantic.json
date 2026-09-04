@@ -43,12 +43,13 @@
     "duration": {
       "$type": "duration",
       "color": { "$value": "{duration.base}" },
-      "panel": { "$value": "{duration.slow}" },
-      "submenu": { "$value": "{duration.fast}" }
+      "panel": { "$value": "{duration.moderate}" },
+      "submenu": { "$value": "{duration.gentle}" }
     },
     "easing": {
       "$type": "cubicBezier",
-      "default": { "$value": "{easing.standard}" }
+      "default": { "$value": "{easing.standard}" },
+      "panel": { "$value": "{easing.decelerate}" }
     }
   }
 }

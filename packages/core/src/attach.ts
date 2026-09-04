@@ -10,6 +10,7 @@
  * could ever remove.
  */
 
+import { isOpen } from './machine.js';
 import type { NavMachine, NavMode, NavState } from './machine.js';
 
 export interface AttachOptions {
@@ -67,25 +68,42 @@ function pathOf(submenu: Element, root: Element): string[] {
   const path: string[] = [];
   let node: Element | null = submenu;
   while (node && node !== root) {
-    if (node.matches(SUBMENU)) {
-      const parent = node.parentElement;
-      const index = parent ? [...parent.children].indexOf(node) : 0;
-      path.unshift(`${depthKey(node, root)}.${index}`);
-    }
+    if (node.matches(SUBMENU)) path.unshift(addressOf(node, root));
     node = node.parentElement;
   }
   return path;
 }
 
-/** Distance to the root, so ids at different depths can never coincide. */
-function depthKey(node: Element, root: Element): number {
-  let depth = 0;
+/**
+ * The chain of child indices from `root` down to `node` — `"2-3-1"`.
+ *
+ * Two earlier versions of this were not unique, and both produced the same
+ * symptom: opening one dropdown marked several, because `render` marks every
+ * submenu whose path reports open.
+ *
+ *   1. depth plus the submenu's index inside its own item. Every item is shaped
+ *      `.navx-link` then the submenu, so that index is 1 in all of them and
+ *      every top-level submenu in the nav shared one id.
+ *
+ *   2. depth plus the *item's* index among its siblings. Better, and still not
+ *      unique: a preset with two menus puts item 1 of the first menu and item 1
+ *      of the second at the same depth with the same index. Services and
+ *      Portfolio collided again.
+ *
+ * A full address cannot collide, because it encodes the route rather than a
+ * summary of it. Depth is implicit in its length, so `depthKey` is gone. It
+ * stays hydration-safe for the same reason the others were — nothing but
+ * structure goes into it, so the server and the client compute the same string.
+ */
+function addressOf(node: Element, root: Element): string {
+  const parts: number[] = [];
   let current: Element | null = node;
   while (current && current !== root) {
-    depth++;
-    current = current.parentElement;
+    const parent: Element | null = current.parentElement;
+    parts.unshift(parent ? [...parent.children].indexOf(current) : 0);
+    current = parent;
   }
-  return depth;
+  return parts.join('-');
 }
 
 /** The submenu a chevron button controls: its next matching sibling. */
@@ -287,11 +305,16 @@ export function attach(
   let spyEngaged = false;
 
   const render = (state: NavState, previous?: NavState) => {
-    const openKey = state.openPath.join('|');
-
     for (const submenu of submenus()) {
-      const key = pathOf(submenu, root).join('|');
-      const open = key !== '' && (openKey === key || openKey.startsWith(`${key}|`));
+      /*
+       * `isOpen`, not a prefix test against `openPath`.
+       *
+       * Open-ness stopped being expressible as one chain the moment
+       * `multiBranch` allowed siblings side by side, and the machine already
+       * knows the answer — asking it keeps this loop from being a second,
+       * subtly different implementation of the same rule.
+       */
+      const open = isOpen(state, pathOf(submenu, root));
 
       setAttr(submenu, 'data-navx-state', open ? 'open' : null);
 

@@ -46,7 +46,7 @@ export class NavxNavElement extends HTMLElement {
 
   /** The state machine, so imperative code can drive or observe the nav. */
   get machine(): NavMachine {
-    this.#machine ??= createNav();
+    this.#machine ??= createNav({ multiBranch: this.hasAttribute('multi-branch') });
     return this.#machine;
   }
 

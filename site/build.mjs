@@ -19,7 +19,7 @@
  * rebuilds the packages and re-runs this before every deploy.
  */
 
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDocs } from './docs.mjs';
@@ -40,9 +40,66 @@ const read = (relative) => {
   }
 };
 
+/**
+ * Refuse to inline a stale build.
+ *
+ * This gate exists because its absence wasted a review cycle. `read()` only
+ * fails when a dist is *missing*; a dist that merely predates its source
+ * inlined happily, so `pnpm preview` served yesterday's stylesheet wrapped in
+ * today's page. The reviewer saw the old 800ms drawer and the dead submenu
+ * transition, reported that the fix had not worked, and was completely right
+ * about what they were looking at.
+ *
+ * A generated file that can silently be older than its input is the same
+ * failure as a generated page that can silently be older than its generator.
+ * Both now stop the build.
+ */
+/* `@navx/tokens` writes `src/generated.ts` as part of its own build, so that
+   one file is always newer than the dist it was produced alongside. It is an
+   output that happens to live in a source folder; counting it would make the
+   package permanently, falsely stale. */
+const GENERATED = new Set(['generated.ts']);
+
+const newestIn = (dir) => {
+  let newest = 0;
+  const walk = (at) => {
+    for (const entry of readdirSync(at, { withFileTypes: true })) {
+      if (GENERATED.has(entry.name)) continue;
+      const path = join(at, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else newest = Math.max(newest, statSync(path).mtimeMs);
+    }
+  };
+  walk(join(REPO, dir));
+  return newest;
+};
+
+const fresh = (dist, sourceDir, pkg) => {
+  const built = statSync(join(REPO, dist)).mtimeMs;
+  const source = newestIn(sourceDir);
+  if (built >= source) return;
+  const age = Math.round((source - built) / 1000);
+  console.error(`
+site/build.mjs: ${dist} is ${age}s older than ${sourceDir}.
+  The page inlines the built packages, so this would ship a stale one.
+
+    pnpm --filter ${pkg} build
+
+  Or rebuild everything the page needs:
+
+    pnpm --filter @navx/tokens --filter @navx/styles --filter @navx/core --filter @navx/presets build
+`);
+  process.exit(1);
+};
+
 const tokens = read('packages/tokens/dist/tokens.css');
 const sheet = read('packages/styles/dist/navx.min.css');
 const core = read('packages/core/dist/index.js');
+
+fresh('packages/tokens/dist/tokens.css', 'packages/tokens/src', '@navx/tokens');
+fresh('packages/styles/dist/navx.min.css', 'packages/styles/src', '@navx/styles');
+fresh('packages/core/dist/index.js', 'packages/core/src', '@navx/core');
+
 const template = readFileSync(join(HERE, 'template.html'), 'utf8');
 
 /**

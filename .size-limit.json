@@ -12,9 +12,9 @@
     "gzip": true
   },
   {
-    "name": "@navx/core (machine + DOM binding, incl. activeId render)",
+    "name": "@navx/core (machine + DOM binding, incl. activeId and multiBranch)",
     "path": "packages/core/dist/index.js",
-    "limit": "4.6 kB",
+    "limit": "5.1 kB",
     "gzip": true
   },
   {
@@ -68,7 +68,7 @@
   {
     "name": "@navx/core + @navx/react (what a React app ships)",
     "path": ["packages/core/dist/index.js", "packages/react/dist/index.js"],
-    "limit": "5.5 kB",
+    "limit": "6 kB",
     "gzip": true
   },
   {

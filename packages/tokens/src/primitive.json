@@ -136,7 +136,9 @@
   "duration": {
     "$type": "duration",
     "fast": { "$value": "150ms" },
+    "gentle": { "$value": "220ms" },
     "base": { "$value": "300ms" },
+    "moderate": { "$value": "320ms" },
     "slow": { "$value": "800ms" }
   },
 

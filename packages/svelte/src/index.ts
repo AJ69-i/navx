@@ -28,7 +28,8 @@ export interface NavStore {
 }
 
 export function navStore(options: NavMachineConfig & { machine?: NavMachine } = {}): NavStore {
-  const machine = options.machine ?? createNav({ mode: options.mode });
+  const machine =
+    options.machine ?? createNav({ mode: options.mode, multiBranch: options.multiBranch });
 
   return {
     subscribe(run) {

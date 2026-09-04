@@ -42,6 +42,28 @@ export interface NavState {
    * handler to approximate the same thing, and got it wrong for nested items.
    */
   readonly openPath: readonly string[];
+  /**
+   * Every *expanded* node, in the order it was expanded.
+   *
+   * A menu is visibly open when it and every one of its ancestors is in here,
+   * which is what makes `multiBranch` fall out of the data structure rather
+   * than needing a memo: closing a parent removes only the parent, so its
+   * children stay expanded-but-hidden, and reopening it restores exactly what
+   * was open inside.
+   *
+   * In single-branch mode this is always precisely the prefixes of `openPath`,
+   * so the two never disagree and `openPath` keeps the meaning it always had.
+   *
+   * The entries are opaque keys. Ask `isOpen(state, path)` rather than reading
+   * them — the encoding is an implementation detail and may change.
+   */
+  readonly expanded: readonly string[];
+  /**
+   * Whether sibling branches may be open at once. Carried in state rather than
+   * closed over, so `reduce` stays a total pure function of what it is handed —
+   * the property the whole test suite is written against.
+   */
+  readonly multiBranch: boolean;
 }
 
 export type NavEvent =
@@ -79,12 +101,108 @@ export interface NavMachineConfig {
    * compile on a field the caller simply did not set.
    */
   readonly mode?: NavMode | undefined;
+  /**
+   * Let sibling branches stay open at once, and remember a closed parent's
+   * children. Default `false` — a standard accordion, one branch at a time.
+   *
+   * With it on, closing a parent hides its children without forgetting them:
+   * reopen the parent and the tree comes back exactly as it was. That is a
+   * different product, not a better one — an accordion's whole value is that
+   * only one thing is ever open — so it is opt-in.
+   */
+  readonly multiBranch?: boolean | undefined;
 }
 
-const INITIAL: NavState = { mode: 'panel', panelOpen: false, openPath: [], activeId: null };
+const INITIAL: NavState = {
+  mode: 'panel',
+  panelOpen: false,
+  openPath: [],
+  expanded: [],
+  multiBranch: false,
+  activeId: null,
+};
 
 const samePath = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((id, i) => id === b[i]);
+
+/*
+ * A path is stored as one NUL-joined string, not as an array.
+ *
+ * `expanded` is a hot set — every render asks it about every submenu — and the
+ * array-of-arrays version needed a key function, a membership scan that
+ * re-joined on every comparison, and a bespoke deep equality for identity
+ * preservation. Flattening to strings deleted all three and brought the added
+ * weight of `multiBranch` from 515 B to well inside the budget. NUL because it
+ * cannot occur in an id that came from a DOM attribute.
+ */
+const SEP = '\u0000';
+
+/** `['a','b']` → `['a', 'a\0b']` — the node and every ancestor, as keys. */
+const chainOf = (path: readonly string[]): string[] =>
+  path.map((_, i) => path.slice(0, i + 1).join(SEP));
+
+const sameList = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((entry, i) => entry === b[i]);
+
+/** Open `path`, expanding its ancestors. */
+const openAt = (state: NavState, path: readonly string[]): NavState => {
+  const chain = chainOf(path);
+  let expanded: readonly string[];
+
+  if (!state.multiBranch) {
+    // The chain *is* the open set, so a sibling closes by construction rather
+    // than by a rule six call sites have to remember.
+    expanded = chain;
+  } else {
+    // Siblings are left alone; this chain moves to the end so the most
+    // recently opened branch is last.
+    expanded = [...state.expanded.filter((key) => !chain.includes(key)), ...chain];
+  }
+
+  if (sameList(expanded, state.expanded) && samePath(state.openPath, path)) return state;
+  return oneRootInABar({ ...state, expanded, openPath: [...path] });
+};
+
+/**
+ * At most one top-level branch visible in bar mode.
+ *
+ * `multiBranch` is an accordion idea and a bar is not an accordion: in a
+ * drawer two open branches stack and both are readable, but a bar's top-level
+ * dropdown is a flyout anchored under its own item, so two open at once simply
+ * land on top of each other.
+ *
+ * This is an invariant on the state rather than a filter inside one transition,
+ * and that distinction is the fix. Filtering in `openAt` covered a click but
+ * not the branch `attach()` opens for the item marked `current` — and whether
+ * that arrived before or after the mode was read from the stylesheet varied
+ * between page loads, so two roots could be visible or not depending on
+ * timing. A rule that has to be remembered at every entry point is a rule that
+ * will be missed at one of them; enforcing it once, on the way out, cannot be.
+ *
+ * Only a root's own key is dropped. Its descendants stay, and a descendant is
+ * invisible without its ancestor, so reopening a root still restores what was
+ * inside it. Nested siblings keep their multi-branch behaviour at every depth.
+ */
+const oneRootInABar = (state: NavState): NavState => {
+  if (!state.multiBranch || state.mode !== 'bar') return state;
+  const survivor = state.openPath[0];
+  const expanded = state.expanded.filter((key) => key.includes(SEP) || key === survivor);
+  if (sameList(expanded, state.expanded)) return state;
+  return { ...state, expanded };
+};
+
+/** Close `path`. What happens to its children is the whole difference. */
+const closeAt = (state: NavState, path: readonly string[]): NavState => {
+  const key = path.join(SEP);
+  const expanded = state.multiBranch
+    ? // Only the node itself. Its descendants stay in `expanded` and simply stop
+      // being visible, because visibility needs every ancestor — which is how
+      // reopening restores the sub-tree with no memo to keep in sync.
+      state.expanded.filter((entry) => entry !== key)
+    : // The node and everything under it: an accordion forgets.
+      state.expanded.filter((entry) => entry !== key && !entry.startsWith(key + SEP));
+  return { ...state, expanded, openPath: path.slice(0, -1) };
+};
 
 /**
  * The whole transition table, as one pure function.
@@ -108,7 +226,13 @@ export function reduce(state: NavState, event: NavEvent): NavState {
       // field would silently have dropped `activeId` every time the viewport
       // crossed 992px. What you are looking at is a bug that a spread prevents
       // and a literal invites.
-      return { ...state, mode: event.mode, panelOpen: false, openPath: [] };
+      return oneRootInABar({
+        ...state,
+        mode: event.mode,
+        panelOpen: false,
+        openPath: [],
+        expanded: [],
+      });
     }
 
     case 'PANEL_OPEN':
@@ -118,34 +242,37 @@ export function reduce(state: NavState, event: NavEvent): NavState {
 
     case 'PANEL_CLOSE':
       if (!state.panelOpen) return state;
-      // Closing the drawer closes what is inside it.
-      return { ...state, panelOpen: false, openPath: [] };
+      // Closing the drawer closes what is inside it — in both modes. Multi-branch
+      // remembers across a parent toggle, not across dismissing the whole nav.
+      return { ...state, panelOpen: false, openPath: [], expanded: [] };
 
     case 'PANEL_TOGGLE':
       return reduce(state, { type: state.panelOpen ? 'PANEL_CLOSE' : 'PANEL_OPEN' });
 
     case 'SUBMENU_OPEN': {
       if (event.path.length === 0) return state;
-      if (samePath(state.openPath, event.path)) return state;
-      // Assignment, not insertion: opening `[a, b]` closes any sibling of `b`
-      // and everything below it, in one step and by construction.
-      return { ...state, openPath: [...event.path] };
+      return openAt(state, event.path);
     }
 
     case 'SUBMENU_TOGGLE': {
       if (event.path.length === 0) return state;
-      // Toggling the menu that is already the deepest one open closes it and
-      // leaves its ancestors open — clicking Laptops shut should not also shut
-      // Products.
-      if (samePath(state.openPath, event.path)) {
-        return { ...state, openPath: event.path.slice(0, -1) };
-      }
-      return { ...state, openPath: [...event.path] };
+      /*
+       * `isOpen`, not path equality.
+       *
+       * The intent was always "close the menu that was clicked". Exact equality
+       * only recognised the *deepest* open menu, so clicking an ancestor while a
+       * descendant was open fell through to the open branch and truncated the
+       * chain — closing the child and leaving the parent open, one level too
+       * deep. The prefix test makes the click land on the node it names.
+       */
+      return isOpen(state, event.path) ? closeAt(state, event.path) : openAt(state, event.path);
     }
 
     case 'SUBMENU_CLOSE_INNERMOST': {
+      // Escape walks up the most recently opened chain, which is what
+      // `openPath` is for even when other branches are open beside it.
       if (state.openPath.length === 0) return state;
-      return { ...state, openPath: state.openPath.slice(0, -1) };
+      return closeAt(state, state.openPath);
     }
 
     case 'SPY_SET': {
@@ -154,8 +281,10 @@ export function reduce(state: NavState, event: NavEvent): NavState {
     }
 
     case 'CLOSE_ALL': {
-      if (!state.panelOpen && state.openPath.length === 0) return state;
-      return { ...state, panelOpen: false, openPath: [] };
+      if (!state.panelOpen && state.openPath.length === 0 && state.expanded.length === 0) {
+        return state;
+      }
+      return { ...state, panelOpen: false, openPath: [], expanded: [] };
     }
 
     default: {
@@ -167,7 +296,14 @@ export function reduce(state: NavState, event: NavEvent): NavState {
 }
 
 export function createNav(config: NavMachineConfig = {}): NavMachine {
-  let state: NavState = config.mode ? { ...INITIAL, mode: config.mode } : INITIAL;
+  let state: NavState =
+    config.mode || config.multiBranch
+      ? {
+          ...INITIAL,
+          ...(config.mode ? { mode: config.mode } : {}),
+          multiBranch: config.multiBranch === true,
+        }
+      : INITIAL;
   let listeners: NavListener[] = [];
 
   return {
@@ -199,8 +335,15 @@ export function createNav(config: NavMachineConfig = {}): NavMachine {
   };
 }
 
-/** True when `path` is the open chain or a prefix of it — i.e. this menu is open. */
+/**
+ * True when this menu is visibly open — it and every one of its ancestors is
+ * expanded.
+ *
+ * Reading the whole chain rather than just the node is what makes a closed
+ * parent hide its children without erasing them, and it costs nothing in
+ * single-branch mode where the ancestors are always expanded anyway.
+ */
 export function isOpen(state: NavState, path: readonly string[]): boolean {
-  if (path.length === 0 || path.length > state.openPath.length) return false;
-  return path.every((id, i) => state.openPath[i] === id);
+  if (path.length === 0) return false;
+  return chainOf(path).every((key) => state.expanded.includes(key));
 }

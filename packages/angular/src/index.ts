@@ -74,6 +74,7 @@ export class NavxDirective implements OnChanges {
   readonly navxDismissOnOutside = input<boolean | undefined>();
   readonly navxModal = input<boolean | undefined>();
   readonly navxMode = input<NavMode | undefined>();
+  readonly navxMultiBranch = input<boolean | undefined>();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #service = inject(NavxService, { optional: true });
@@ -83,7 +84,9 @@ export class NavxDirective implements OnChanges {
 
   constructor() {
     this.#ownsMachine = this.#service === null;
-    this.#machine = this.#service?.machine ?? createNav({ mode: this.navxMode() });
+    this.#machine =
+      this.#service?.machine ??
+      createNav({ mode: this.navxMode(), multiBranch: this.navxMultiBranch() });
 
     // Attach in the constructor rather than ngOnInit: the host element already
     // exists by the time a directive is constructed, and `attach()` only needs

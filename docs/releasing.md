@@ -46,6 +46,33 @@ docs that someone has to maintain and everyone has to read.
 Workspace dependencies publish as `^1.0.0`, so a consumer who takes a patch of
 one package is not forced to move the other nine in the same install.
 
+## The core's size budget
+
+It has been raised twice, and both times deliberately:
+
+| version | limit | what bought the bytes |
+|---|---|---|
+| Stage 3 | 4.5 kB | the machine and the DOM binding |
+| Stage 6 | 4.6 kB | `activeId` rendering, so scroll-spy never writes DOM itself |
+| Stage 7 | 5.1 kB | `multiBranch` — sibling branches, and a closed parent that remembers |
+
+`multiBranch` costs about 450 B gzipped and cannot be tree-shaken: it is a
+branch inside the reducer, reachable from every `send()`. An accordion-only
+consumer therefore pays for an option they will not set, which is the honest
+argument against merging it at all.
+
+It went in anyway because the alternative was worse. The same 450 B also buys
+the fix that made `SUBMENU_TOGGLE` act on the node it names rather than the
+deepest one open, and a second published package for one boolean would be a
+compatibility matrix nobody wants to read.
+
+The composite `@navx/core + @navx/react` budget moved by the same 0.5 kB, for
+the same reason — a shared line has to move when the thing it contains does, or
+it stops measuring the composition and starts re-measuring the part.
+
+Raise either line again only with a row in the table. A budget that moves
+without a reason is not a budget.
+
 ## What counts as breaking
 
 The usual TypeScript rules apply, and then three more that are specific to a

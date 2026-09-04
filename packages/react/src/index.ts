@@ -31,7 +31,7 @@ export interface UseNavResult {
 }
 
 export function useNav(options: UseNavOptions = {}): UseNavResult {
-  const { machine: provided, mode, ...attachOptions } = options;
+  const { machine: provided, mode, multiBranch, ...attachOptions } = options;
 
   /**
    * `useState`'s lazy initialiser, not `useMemo`.
@@ -42,7 +42,7 @@ export function useNav(options: UseNavOptions = {}): UseNavResult {
    * the documented way to own a value for the life of a component.
    */
   const owned = useRef<NavMachine | null>(null);
-  if (!provided && owned.current === null) owned.current = createNav({ mode });
+  if (!provided && owned.current === null) owned.current = createNav({ mode, multiBranch });
   const machine = provided ?? (owned.current as NavMachine);
 
   // Dispose only what this component created. A machine passed in belongs to

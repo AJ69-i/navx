@@ -22,6 +22,7 @@
     "stage2:colours": "node tools/diff-colours.mjs",
     "stage2:layers": "node tools/layer-loss.mjs",
     "stage2:utilities": "node tools/assert-utilities.mjs",
+    "tokens": "node tools/assert-tokens.mjs",
     "stage2:rtl": "node tools/rtl-audit.mjs",
     "stage2:rtl-sheet": "node tools/rtl-sheet.mjs",
     "stage3:leak": "node tools/leak-test.mjs",

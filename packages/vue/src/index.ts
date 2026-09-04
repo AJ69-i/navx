@@ -24,8 +24,8 @@ export interface UseNavResult {
 }
 
 export function useNav(options: UseNavOptions = {}): UseNavResult {
-  const { machine: provided, mode, ...attachOptions } = options;
-  const machine = provided ?? createNav({ mode });
+  const { machine: provided, mode, multiBranch, ...attachOptions } = options;
+  const machine = provided ?? createNav({ mode, multiBranch });
 
   /**
    * `shallowRef`, not `ref`.

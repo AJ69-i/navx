@@ -10,12 +10,24 @@ import { describe, expect, it, vi } from 'vitest';
 import { createNav, isOpen, reduce } from '../src/machine.js';
 import type { NavState } from '../src/machine.js';
 
-const state = (over: Partial<NavState> = {}): NavState => ({
-  mode: 'panel',
-  panelOpen: false,
-  openPath: [],
-  ...over,
-});
+/*
+ * `expanded` is derived from `openPath` unless a test states it, which keeps
+ * every existing case reading the way it always did: in single-branch mode the
+ * two are the same fact expressed twice, and the derivation is exactly the
+ * invariant the reducer maintains.
+ */
+const state = (over: Partial<NavState> = {}): NavState => {
+  const openPath = over.openPath ?? [];
+  return {
+    mode: 'panel',
+    panelOpen: false,
+    activeId: null,
+    multiBranch: false,
+    openPath,
+    expanded: openPath.map((_, i) => openPath.slice(0, i + 1).join('\u0000')),
+    ...over,
+  };
+};
 
 describe('submenu paths', () => {
   it('opening a submenu records the whole chain', () => {
@@ -43,6 +55,33 @@ describe('submenu paths', () => {
     let s = state({ mode: 'bar', openPath: ['products', 'laptops'] });
     s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['products', 'laptops'] });
     expect(s.openPath).toEqual(['products']);
+  });
+
+  /*
+   * The case the suite was missing, and the reason it shipped broken: every
+   * existing toggle test either matched the open chain exactly or was fully
+   * closed. Toggling an *ancestor* of the open chain was never exercised, and
+   * that is precisely where exact-equality fell through to the assignment
+   * branch and closed the child instead of the parent.
+   */
+  it('toggling an open ancestor closes the ancestor, not its child', () => {
+    let s = state({ mode: 'panel', openPath: ['lines', 'central'] });
+    s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['lines'] });
+    expect(s.openPath).toEqual([]);
+  });
+
+  it('toggling a mid-chain menu closes it and everything under it', () => {
+    let s = state({ mode: 'bar', openPath: ['a', 'b', 'c', 'd'] });
+    s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['a', 'b'] });
+    expect(s.openPath).toEqual(['a']);
+  });
+
+  it('toggling a sibling of the open chain switches branches', () => {
+    const s = reduce(state({ mode: 'bar', openPath: ['lines', 'central'] }), {
+      type: 'SUBMENU_TOGGLE',
+      path: ['stations'],
+    });
+    expect(s.openPath).toEqual(['stations']);
   });
 
   it('toggling a closed menu opens it', () => {
@@ -95,13 +134,123 @@ describe('the drawer', () => {
   });
 });
 
+describe('multi-branch', () => {
+  const multi = (over: Partial<NavState> = {}) =>
+    state({ mode: 'panel', multiBranch: true, ...over });
+
+  it('lets sibling branches be open at once', () => {
+    let s = reduce(multi(), { type: 'SUBMENU_OPEN', path: ['lines'] });
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['stations'] });
+    expect(isOpen(s, ['lines'])).toBe(true);
+    expect(isOpen(s, ['stations'])).toBe(true);
+  });
+
+  it('single-branch closes the sibling instead', () => {
+    let s = reduce(state({ mode: 'panel' }), { type: 'SUBMENU_OPEN', path: ['lines'] });
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['stations'] });
+    expect(isOpen(s, ['lines'])).toBe(false);
+    expect(isOpen(s, ['stations'])).toBe(true);
+  });
+
+  it('closing a parent hides its children but does not forget them', () => {
+    let s = reduce(multi(), { type: 'SUBMENU_OPEN', path: ['lines'] });
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['lines', 'central'] });
+    expect(isOpen(s, ['lines', 'central'])).toBe(true);
+
+    s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['lines'] });
+    expect(isOpen(s, ['lines'])).toBe(false);
+    expect(isOpen(s, ['lines', 'central'])).toBe(false);
+
+    // …and reopening restores the sub-tree exactly, with no memo involved.
+    s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['lines'] });
+    expect(isOpen(s, ['lines'])).toBe(true);
+    expect(isOpen(s, ['lines', 'central'])).toBe(true);
+  });
+
+  it('single-branch forgets them, which is what an accordion is for', () => {
+    let s = reduce(state({ mode: 'panel' }), { type: 'SUBMENU_OPEN', path: ['lines'] });
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['lines', 'central'] });
+    s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['lines'] });
+    s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['lines'] });
+    expect(isOpen(s, ['lines'])).toBe(true);
+    expect(isOpen(s, ['lines', 'central'])).toBe(false);
+  });
+
+  it('a bar keeps top-level siblings exclusive even with multiBranch', () => {
+    let s = reduce(state({ mode: 'bar', multiBranch: true }), {
+      type: 'SUBMENU_OPEN',
+      path: ['services'],
+    });
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['portfolio'] });
+    expect(isOpen(s, ['services'])).toBe(false);
+    expect(isOpen(s, ['portfolio'])).toBe(true);
+  });
+
+  it('…while a drawer lets them stack, because an accordion is readable', () => {
+    let s = reduce(state({ mode: 'panel', multiBranch: true }), {
+      type: 'SUBMENU_OPEN',
+      path: ['services'],
+    });
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['portfolio'] });
+    expect(isOpen(s, ['services'])).toBe(true);
+    expect(isOpen(s, ['portfolio'])).toBe(true);
+  });
+
+  it('a bar still remembers what was inside a closed root', () => {
+    let s = reduce(state({ mode: 'bar', multiBranch: true }), {
+      type: 'SUBMENU_OPEN',
+      path: ['portfolio', 'programming'],
+    });
+    // Switching roots closes Portfolio…
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['services'] });
+    expect(isOpen(s, ['portfolio'])).toBe(false);
+    expect(isOpen(s, ['portfolio', 'programming'])).toBe(false);
+    // …and coming back restores the sub-tree.
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['portfolio'] });
+    expect(isOpen(s, ['portfolio', 'programming'])).toBe(true);
+    expect(isOpen(s, ['services'])).toBe(false);
+  });
+
+  it('nested siblings in a bar still stack — the rule is top level only', () => {
+    let s = reduce(state({ mode: 'bar', multiBranch: true }), {
+      type: 'SUBMENU_OPEN',
+      path: ['portfolio', 'design'],
+    });
+    s = reduce(s, { type: 'SUBMENU_OPEN', path: ['portfolio', 'programming'] });
+    expect(isOpen(s, ['portfolio', 'design'])).toBe(true);
+    expect(isOpen(s, ['portfolio', 'programming'])).toBe(true);
+  });
+
+  it('closing the drawer forgets everything in both modes', () => {
+    let s = reduce(multi({ panelOpen: true }), {
+      type: 'SUBMENU_OPEN',
+      path: ['lines', 'central'],
+    });
+    s = reduce(s, { type: 'PANEL_CLOSE' });
+    expect(s.expanded).toEqual([]);
+    s = reduce(s, { type: 'PANEL_OPEN' });
+    s = reduce(s, { type: 'SUBMENU_TOGGLE', path: ['lines'] });
+    expect(isOpen(s, ['lines', 'central'])).toBe(false);
+  });
+
+  it('createNav carries the choice', () => {
+    expect(createNav().getState().multiBranch).toBe(false);
+    expect(createNav({ multiBranch: true }).getState().multiBranch).toBe(true);
+  });
+
+  it('a redundant open is still identity', () => {
+    const s = reduce(multi(), { type: 'SUBMENU_OPEN', path: ['lines'] });
+    expect(reduce(s, { type: 'SUBMENU_OPEN', path: ['lines'] })).toBe(s);
+  });
+});
+
 describe('crossing the breakpoint', () => {
   it('closes everything, because a drawer accordion is not a dropdown', () => {
     const s = reduce(state({ panelOpen: true, openPath: ['a', 'b'] }), {
       type: 'MODE_SET',
       mode: 'bar',
     });
-    expect(s).toEqual({ mode: 'bar', panelOpen: false, openPath: [] });
+    expect(s).toEqual(state({ mode: 'bar' }));
   });
 
   it('a repeated MODE_SET is identity — a ResizeObserver may fire on every pixel', () => {

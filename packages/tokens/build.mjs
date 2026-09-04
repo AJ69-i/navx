@@ -187,7 +187,15 @@ async function main() {
   await writeFile(
     path.join(DIST, '_tokens.scss'),
     `// @navx/tokens — generated. Sass consumers get the resolved literals.\n${[...all]
-      .map(([n, t]) => `$navx-${n.replace(/\./g, '-')}: ${resolve(t.value, all)};`)
+      // `cssName` strips a trailing `.default` (`surface.default` → `--navx-surface`)
+      // and this did not, so the two exports disagreed for every such token:
+      // `$navx-motion-easing-default` in SCSS against `--navx-motion-easing` in CSS.
+      // The stylesheet was written against the SCSS spelling, which meant its submenu
+      // height transition referenced a custom property that does not exist — and an
+      // undefined var in a `transition` shorthand is invalid at computed-value time,
+      // so the whole declaration was dropped. The animation had never once run.
+      // One naming function now, for both.
+      .map(([n, t]) => `$${cssName(n).slice(2)}: ${resolve(t.value, all)};`)
       .join('\n')}\n`,
     'utf8',
   );

@@ -278,7 +278,23 @@ html.theme-armed .demo {
 
 /* ─── hero ────────────────────────────────────────────────────────────────── */
 
-.hero { padding-block: clamp(2.5rem, 6vw, 4.5rem) 2.5rem; }
+.hero { padding-block: clamp(2.5rem, 6vw, 4.5rem) 2rem; }
+
+/* Centred intro, then the demo on its own full-container band below. */
+/* Wide enough for a 4.75rem headline to break where the `<br>` says rather
+   than wherever the measure happens to run out. */
+.hero-intro { max-inline-size: 52rem; margin-inline: auto; text-align: center; }
+.hero-intro p { margin-inline: auto; }
+.hero-intro .install {
+  margin-block-start: 2rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hero-intro .cmd { flex: 0 1 auto; }
+
+.hero-demo { padding-block-end: clamp(2.5rem, 6vw, 4rem); }
+.hero-demo .hint { margin-inline: auto; text-align: center; margin-block-start: 1.1rem; }
 .hero-grid {
   display: grid;
   gap: clamp(2rem, 5vw, 4rem);
@@ -328,23 +344,64 @@ html.theme-armed .demo {
     linear-gradient(var(--rail-2) 1px, transparent 1px) 0 0 / 100% 1.5rem,
     var(--paper-2);
 }
+/*
+ * The container the slider resizes.
+ *
+ * It is allowed to be *wider than the column it sits in* — up to 1280 CSS
+ * pixels inside a 540px card — and is scaled down to fit. That is not a trick
+ * to save space; it is the only way this demo can make its own point.
+ *
+ * The hero card lives in a half-width column that tops out around 542px, and
+ * below 992px of viewport the hero collapses to one column and the card gets
+ * ~910px. Neither regime crosses 992, so before this the nav was in panel mode
+ * at every viewport from 400px to 1920px — the caption invited the reader to
+ * drag until it became a drawer, and it had never once been anything else.
+ *
+ * `container-type: inline-size` resolves against *layout* size, and transforms
+ * do not change layout size. So the nav genuinely is 1280 CSS pixels wide and
+ * genuinely is in bar mode; you are looking at it at 42%. Which demonstrates
+ * the architecture better than a full-size demo would: the mode has nothing to
+ * do with the window, and here is a bar-mode navbar occupying 540 real pixels
+ * to prove it.
+ */
+.demo-stage { overflow: clip; }
 .demo-viewport {
   inline-size: 100%;
-  margin-inline: auto;
-  max-inline-size: 100%;
-  min-block-size: 15rem;
-  transition: inline-size 120ms ease-out;
+  transform-origin: left top;
+  min-block-size: 17rem;
+}
+
+.range-wrap { position: relative; flex: 1; display: flex; align-items: center; }
+.range-wrap input[type='range'] { inline-size: 100%; }
+.tick {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 70%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.tick::before {
+  content: '';
+  position: absolute;
+  inset-block-end: 100%;
+  inset-inline-start: 50%;
+  inline-size: 1px;
+  block-size: 0.5rem;
+  background: var(--rail);
 }
 .demo-controls {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  padding: 0.7rem 0.9rem;
+  padding: 0.7rem 0.9rem 1.4rem;
   border-block-start: 1px solid var(--rail);
   font-size: 0.8rem;
   color: var(--ink-2);
 }
-.demo-controls input[type='range'] { flex: 1; accent-color: var(--accent); }
+.demo-controls input[type='range'] { accent-color: var(--accent); }
 .demo-controls .val { font-family: var(--mono); font-size: 0.78rem; min-inline-size: 4.5rem; text-align: end; font-variant-numeric: tabular-nums; }
 .hint { font-size: 0.8rem; color: var(--ink-3); margin-block-start: 0.6rem; }
 
@@ -449,7 +506,7 @@ html.theme-armed .demo {
    whole document sideways — `.table-scroll` and `.cmd` never get the chance to
    scroll. `min-inline-size: 0` lets them shrink so their own overflow works.
    This is what put 169px of horizontal scroll on the page at phone widths. */
-.two-col > *, .hero-grid > * { min-inline-size: 0; }
+.two-col > * { min-inline-size: 0; }
 @media (min-width: 58rem) { .two-col { grid-template-columns: 1fr 1fr; } }
 
 /* ─── footer ──────────────────────────────────────────────────────────────── */
@@ -472,6 +529,10 @@ footer .row { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: spac
 .docs-bar {
   position: sticky;
   inset-block-start: 0;
+  /* Page chrome stays below the library's own layers — `--navx-layer-overlay`
+     is 300 and `--navx-layer-panel` 400 — so an open drawer covers this bar
+     rather than fighting it. Anything sticky added to this page belongs here
+     too, under 300. */
   z-index: 40;
   display: flex;
   flex-wrap: wrap;
@@ -613,8 +674,22 @@ footer .row { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: spac
    worse than it. */
 .navx-demo:has([data-navx-state='open']) {
   overflow: visible;
+  /*
+   * `position: relative` and *no* z-index, deliberately.
+   *
+   * `z-index: 5` was here to lift an open dropdown over the code block below
+   * it, and it worked — while also creating a stacking context. The library's
+   * drawer is `z-index: 400`, comfortably above this page's sticky docs bar at
+   * 40, but 400 was being resolved *inside* a context whose own index was 5. So
+   * the whole demo competed with the bar as a single unit, at 5 against 40, and
+   * the drawer painted underneath a header it completely overlapped.
+   *
+   * A positioned element with `z-index: auto` creates no stacking context, and
+   * still paints above the static content of its siblings — which is all the
+   * dropdown ever needed. The drawer's 400 now resolves against the root, where
+   * the library intended it to.
+   */
   position: relative;
-  z-index: 5;
 }
 .dcard:has(.navx-demo [data-navx-state='open']) { overflow: visible; }
 .dcard > .navx-demo:first-of-type { margin-block-start: 0; border-block-start: 0; }
@@ -779,8 +854,7 @@ html { scroll-behavior: smooth; }
 
 <main>
   <section class="wrap hero">
-    <div class="hero-grid">
-      <div>
+    <div class="hero-intro">
         <p class="eyebrow">v1.0.0 · MIT · ten packages</p>
         <h1>The navbar,<br><em>measured.</em></h1>
         <p class="lede">
@@ -797,15 +871,23 @@ html { scroll-behavior: smooth; }
         <p class="hint">
           4.5 kB core, 4.2 kB stylesheet, both gzipped. Nothing else required.
         </p>
-      </div>
+    </div>
+  </section>
 
-      <div>
+  <!-- The demo gets the whole page container.
+       In the split column it topped out around 542 physical pixels, which forced
+       a transform to reach 992 — and a transformed ancestor is a containing block
+       for `position: fixed`, so the drawer was trapped inside the card. Full width
+       means no transform on a normal desktop: crisp 2px hairlines, an unmissable
+       toggler the instant the links hide, and a drawer fixed to the real viewport. -->
+  <section class="wrap hero-demo">
         <div class="demo">
           <div class="demo-head">
             <span class="eyebrow">Live — the published core and stylesheet</span>
             <span class="demo-mode" id="mode">bar</span>
           </div>
           <div class="demo-surface navx-scope">
+            <div class="demo-stage" id="stage">
             <div class="demo-viewport" id="viewport">
               <nav class="navx" id="demo-nav" data-navx-align="between">
                 <div class="navx-header">
@@ -849,20 +931,26 @@ html { scroll-behavior: smooth; }
               </nav>
             </div>
           </div>
+          </div>
           <div class="demo-controls">
             <label for="width">Container</label>
-            <input type="range" id="width" min="320" max="1100" value="1100" step="4">
-            <span class="val" id="widthval">1100 px</span>
+            <div class="range-wrap">
+              <input type="range" id="width" min="320" max="1280" value="1280" step="4"
+                     aria-describedby="widthval">
+              <!-- The breakpoint, marked where it actually falls on the track.
+                   (992 − 320) / (1280 − 320) = 70%. -->
+              <span class="tick" aria-hidden="true">992</span>
+            </div>
+            <span class="val" id="widthval">1280 px</span>
           </div>
         </div>
         <p class="hint">
-          Drag the container narrower and the nav becomes a drawer — a container
-          query, not a media query, so a nav in a 400&nbsp;px sidebar is a drawer
-          on a 4K display. Tab to the chevron and press Enter; Escape closes it
-          and returns focus.
-        </p>
-      </div>
-    </div>
+          Drag the container narrower and the nav becomes a drawer the moment it
+          crosses 992&nbsp;px — a container query, not a media query, so a nav in a
+          400&nbsp;px sidebar is a drawer on a 4K display while the window stays
+          wide. Open the drawer: it is <code>position: fixed</code>, so it covers
+          the page rather than the card, exactly as it would in your app. Tab to a
+          chevron and press Enter; Escape closes one level and returns focus.</p>
   </section>
 
   <section class="band" id="evidence">
@@ -1105,24 +1193,105 @@ label.textContent = machine.getState().mode;
 
 const range = document.getElementById('width');
 const viewport = document.getElementById('viewport');
+const stage = document.getElementById('stage');
 const readout = document.getElementById('widthval');
-const surface = viewport.parentElement;
+const surface = stage.parentElement;
 
-/* The slider's ceiling is whatever the column actually offers, recomputed on
-   resize. A fixed max let the demo render wider than its container, which put
-   a `data-navx-align="between"` menu off the right edge of the page. */
+/*
+ * The slider drives a real CSS width and the stage scales it to fit.
+ *
+ * The previous version clamped the slider's maximum to the column's own width,
+ * which sounds prudent and was in fact fatal: the column tops out near 542px in
+ * the two-column hero and near 910px in the collapsed one, so the ceiling never
+ * reached 992 at ANY viewport. The nav rendered in panel mode from 400px to
+ * 4K, under a caption inviting the reader to drag until it turned into one.
+ *
+ * So the width is now honest — 320 to 1280 CSS pixels, spanning the breakpoint
+ * with room on both sides — and the *scale* absorbs the difference. Because
+ * `container-type: inline-size` is resolved against layout size and a transform
+ * does not change layout size, the container query sees the real number. At
+ * 1280 the nav is a genuine bar-mode navbar 1280 pixels wide, shown at 42%.
+ */
+const CSS_MIN = 320;
+/*
+ * 992 plus headroom. The slider's ceiling is whichever is larger, this or the
+ * container itself — so on any normal desktop the container wins, the whole
+ * range renders at 1:1, and there is no transform anywhere.
+ *
+ * That last part is not a nicety. A transformed ancestor is a containing block
+ * for `position: fixed`, so while the demo was scaled the drawer was fixed to
+ * the *card* instead of the viewport and opened clipped inside it. And 2px
+ * hairlines — the hamburger is three of them — scaled to 0.55 landed on
+ * sub-pixel boundaries and washed out, which is why the toggler looked absent
+ * for 370px of the slider's travel.
+ */
+const CSS_MAX = 1100;
+
+/* Set while the drawer is open. */
+let drawerOpen = false;
+
 const fit = () => {
-  const max = Math.round(surface.clientWidth);
+  /* The stage, not the surface. `.demo-surface` carries 1.1rem of padding, so
+     its `clientWidth` is 35px wider than the box the nav actually gets — and a
+     nav sized to that overflows by exactly one menu item, which is why the last
+     link came out clipped against the card's right edge. */
+  const available = Math.max(1, Math.floor(stage.clientWidth));
+  const max = Math.max(CSS_MAX, available);
   range.max = String(max);
   if (Number(range.value) > max) range.value = String(max);
-  viewport.style.inlineSize = `${range.value}px`;
-  readout.textContent = `${range.value} px`;
+
+  let css = Math.max(CSS_MIN, Number(range.value));
+
+  /*
+   * While the drawer is open the container shrinks to what the card actually
+   * offers, which drops the transform entirely. The nav stays in panel mode
+   * either way — you can only reach the toggler below 992 — so nothing
+   * structural changes, and the drawer becomes what it claims to be: fixed to
+   * the viewport, over the page, like it would be in an app.
+   */
+  if (drawerOpen) css = Math.min(css, available);
+
+  const scale = Math.min(1, available / css);
+
+  viewport.style.inlineSize = `${css}px`;
+  viewport.style.transform = scale < 0.999 ? `scale(${scale})` : '';
+
+  /* A scaled element still occupies its unscaled height in layout, so the card
+     would carry a tall empty gap under the nav. */
+  stage.style.blockSize = `${Math.round(viewport.offsetHeight * scale)}px`;
+
+  readout.textContent =
+    scale < 0.999 ? `${css} px · ${Math.round(scale * 100)}%` : `${css} px`;
 };
-range.addEventListener('input', fit);
-addEventListener('resize', fit);
-fit();
-range.value = range.max;
-fit();
+
+/* The tick sits where 992 actually falls, which moves with the ceiling. */
+const tickEl = document.querySelector('.tick');
+const placeTick = () => {
+  const min = Number(range.min);
+  const max = Number(range.max);
+  const at = ((992 - min) / (max - min)) * 100;
+  tickEl.style.insetInlineStart = `${Math.max(0, Math.min(100, at)).toFixed(1)}%`;
+  tickEl.hidden = at < 2 || at > 98;
+};
+
+const refresh = () => {
+  fit();
+  placeTick();
+};
+
+range.addEventListener('input', refresh);
+addEventListener('resize', refresh);
+new ResizeObserver(refresh).observe(stage);
+
+/* The drawer's own state drives the un-scale, read from the machine rather
+   than guessed from a click — so Escape and outside-dismissal are covered too. */
+machine.subscribe((state) => {
+  if (state.panelOpen === drawerOpen) return;
+  drawerOpen = state.panelOpen;
+  refresh();
+});
+
+refresh();
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Documentation.
@@ -1137,7 +1306,11 @@ fit();
 /* 1. Every demo becomes live. */
 const demos = document.querySelectorAll('[data-navx-demo] > .navx');
 for (const root of demos) {
-  attach(root, createNav(), { dismissOnOutside: true });
+  /* The docs demos run multi-branch so the option is visible rather than only
+     described: open two menus at once, close a parent, reopen it and its
+     children come back. The hero demo above is left on the default accordion,
+     so the page shows both behaviours side by side. */
+  attach(root, createNav({ multiBranch: true }), { dismissOnOutside: true });
 
   /* Demo links are `href="#"` placeholders. Left alone they would yank the
      page to the top mid-scroll, which reads as a broken navbar rather than the

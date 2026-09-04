@@ -222,8 +222,12 @@
   -webkit-overflow-scrolling: touch;
   background: var(--navx-panel-background);
   z-index: var(--navx-panel-z-index);
+  /* 800ms on a hardcoded near-linear curve read as a drawer being dragged
+     rather than opening. 320ms on a decelerate curve — fast out of the gate,
+     settling at the end — is what a drawer is supposed to feel like, and the
+     curve is now a token like everything else. */
   transition: inset-inline-start var(--navx-panel-transition-duration)
-    cubic-bezier(0.1, 0.1, 0.1, 0.1);
+    var(--navx-motion-easing-panel);
 }
 
 @media (min-width: 500px) {
@@ -1539,10 +1543,21 @@
  * the magic number. `interpolate-size` animates to the real height with no
  * magic number, and the grid fallback covers browsers without it.
  */
+/*
+ * No `overflow: visible` here.
+ *
+ * In panel mode this is an accordion: the height animation *is* the reveal, and
+ * it only reads as one while the box clips its content. With `overflow: visible`
+ * the switch is discrete and lands on the first frame, so every link was fully
+ * painted before the box had grown at all — the height animated correctly and
+ * was completely invisible, which is a convincing impression of no animation.
+ *
+ * Bar mode still needs to escape, and asks for it separately in the container
+ * query below, where a dropdown genuinely has to overflow its bar.
+ */
 .navx-submenu[data-navx-state="open"],
 .navx-megamenu[data-navx-state="open"] {
   max-block-size: none;
-  overflow: visible;
 }
 
 .navx-megamenu[data-navx-state="open"] {
@@ -1633,7 +1648,7 @@
   .navx-submenu,
   .navx-megamenu {
     max-block-size: 0;
-    transition: max-block-size var(--navx-motion-duration-submenu) var(--navx-motion-easing-default);
+    transition: max-block-size var(--navx-motion-duration-submenu) var(--navx-motion-easing);
   }
   .navx-submenu[data-navx-state="open"],
   .navx-megamenu[data-navx-state="open"] {
