@@ -44,8 +44,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # The page inlines these three, so they must exist and be current.
-      - run: pnpm --filter @navx/tokens --filter @navx/styles --filter @navx/core build
+      # The page inlines these and generates its documentation from the preset
+      # catalogue, so all four must exist and be current. `@navx/presets` was
+      # added when the docs section landed — without it `site/build.mjs` exits
+      # before writing anything.
+      - run: >-
+          pnpm --filter @navx/tokens --filter @navx/styles --filter @navx/core
+          --filter @navx/presets build
 
       - name: Rebuild the page from the freshly built packages
         run: node site/build.mjs
@@ -59,6 +64,14 @@ jobs:
             echo "::warning::site/index.html was out of date and has been regenerated for this deploy"
             git --no-pager diff --stat -- site/index.html
           fi
+
+      # Forty-nine live navbars, two hundred code blocks and a framework
+      # switcher, none of which `build.mjs` can prove work. This opens the file
+      # in Chromium and asserts they do — a deploy that ships a page of inert
+      # markup is worse than a deploy that fails.
+      - run: pnpm --filter @navx/baseline-harness exec playwright install --with-deps chromium
+      - name: Verify the built page
+        run: pnpm --filter @navx/baseline-harness run site
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

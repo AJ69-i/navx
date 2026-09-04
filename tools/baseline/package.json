@@ -30,7 +30,8 @@
     "stage5:identity": "node tools/stage5-identity.mjs",
     "stage5": "node tools/compare-renders.mjs --harness stage5",
     "stage6:overlay": "node tools/assert-overlay.mjs",
-    "stage6:scrollspy": "node tools/assert-scrollspy.mjs"
+    "stage6:scrollspy": "node tools/assert-scrollspy.mjs",
+    "site": "node tools/verify-site.mjs"
   },
   "//devDependencies": "Playwright is pinned exactly, not ranged. Chromium build differences change text rasterisation, which silently invalidates every baseline. Upgrading is a deliberate act that requires re-approving the snapshots.",
   "devDependencies": {
