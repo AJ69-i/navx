@@ -326,6 +326,9 @@ let demoId = 0;
  * fully interactive: these are not screenshots.
  */
 const demo = (markup, { skin = null, dir = null, theme = null, height = null } = {}) => {
+  // A demo that exists to show a particular skin or theme keeps it when the
+  // page's theme changes; everything else follows the page.
+  const pinned = skin !== null || theme !== null;
   const id = `demo-${++demoId}`;
   const attrs = [
     // `navx-scope` is where the token file lands once build.mjs rescopes it off
@@ -337,6 +340,7 @@ const demo = (markup, { skin = null, dir = null, theme = null, height = null } =
     skin ? `data-navx-skin="${esc(skin)}"` : '',
     dir ? `dir="${esc(dir)}"` : '',
     theme ? `data-navx-theme="${esc(theme)}"` : '',
+    pinned ? 'data-pin' : '',
     height ? `style="min-block-size:${esc(height)}"` : '',
   ]
     .filter(Boolean)

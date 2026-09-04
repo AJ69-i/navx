@@ -268,7 +268,94 @@ check('cards follow', luminance(dark.card) < 80, dark.card);
 check('body copy stays light on it', luminance(dark.text) > 100, dark.text);
 await page.emulateMedia({ colorScheme: 'light' });
 
-/* ── 10. no horizontal overflow at either end ────────────────────────────── */
+/* ── 10. theme: three states, no flash, demos in step ────────────────────── */
+
+console.log('\ntheme');
+
+/* The whole point of the inline script is that it is neither deferred nor a
+   module. Either one lets a white page paint before a stored dark preference
+   is read, and a screenshot cannot catch a single frame reliably — so assert
+   the property that makes the flash impossible instead. */
+const prepaint = await page.evaluate(() => {
+  const scripts = [...document.scripts];
+  const inline = scripts.find((s) => !s.src && s.textContent.includes('navx-theme'));
+  if (!inline) return { found: false };
+  return {
+    found: true,
+    blocking: !inline.defer && !inline.async && inline.type !== 'module',
+    beforeBody: inline.compareDocumentPosition(document.body) & Node.DOCUMENT_POSITION_FOLLOWING,
+  };
+});
+check('a pre-paint theme script exists', prepaint.found);
+check('it is blocking, not deferred or a module', prepaint.blocking === true);
+check('it runs before the body', Boolean(prepaint.beforeBody));
+
+const themeState = async () =>
+  page.evaluate(() => {
+    const root = document.documentElement;
+    const surfaces = [...document.querySelectorAll('.navx-demo')];
+    return {
+      attr: root.getAttribute('data-theme'),
+      scheme: getComputedStyle(root).colorScheme,
+      paper: getComputedStyle(document.body).backgroundColor,
+      accent: getComputedStyle(root).getPropertyValue('--accent').trim(),
+      checked: [...document.querySelectorAll('[data-theme-pick][aria-checked="true"]')].map(
+        (b) => b.dataset.themePick,
+      ),
+      following: surfaces.filter(
+        (d) => !d.hasAttribute('data-pin') && d.getAttribute('data-navx-theme') === 'dark',
+      ).length,
+      free: surfaces.filter((d) => !d.hasAttribute('data-pin')).length,
+      pinnedDark: surfaces.filter(
+        (d) => d.hasAttribute('data-pin') && d.getAttribute('data-navx-theme') === 'dark',
+      ).length,
+      meta: document.querySelector('meta[name="theme-color"]')?.content ?? null,
+    };
+  });
+
+await page.emulateMedia({ colorScheme: 'light' });
+await page.waitForTimeout(200);
+let t = await themeState();
+check('defaults to system', t.attr === null && t.checked.join() === 'system');
+check('light on a light machine', t.scheme === 'light', t.paper);
+check('demos stay light with the page', t.following === 0, `${t.following}/${t.free} dark`);
+
+await page.emulateMedia({ colorScheme: 'dark' });
+await page.waitForTimeout(250);
+t = await themeState();
+check('follows the OS to dark with no click', t.scheme === 'dark' && t.attr === null, t.paper);
+check('still reads as system', t.checked.join() === 'system');
+check('every unpinned demo follows', t.following === t.free, `${t.following}/${t.free}`);
+check('theme-color meta tracks the ground', /^#|rgb/.test(t.meta ?? ''), t.meta);
+
+/* An explicit choice has to beat the OS in both directions — the direction
+   people forget is light-on-a-dark-machine. */
+await page.click('[data-theme-pick="light"]');
+await page.waitForTimeout(200);
+t = await themeState();
+check('light chosen on a dark machine wins', t.attr === 'light' && t.scheme === 'light', t.paper);
+check('demos go back to light', t.following === 0, `${t.following}/${t.free}`);
+check('pinned demos keep their theme', t.pinnedDark > 0, `${t.pinnedDark} pinned dark`);
+
+const stored = await page.evaluate(() => localStorage.getItem('navx-theme'));
+check('the choice is written down', stored === 'light', String(stored));
+
+await page.reload({ waitUntil: 'load' });
+await page.waitForTimeout(300);
+t = await themeState();
+check('and survives a reload', t.attr === 'light' && t.checked.join() === 'light');
+
+await page.click('[data-theme-pick="system"]');
+await page.waitForTimeout(200);
+t = await themeState();
+const cleared = await page.evaluate(() => localStorage.getItem('navx-theme'));
+check('system is reachable again', t.attr === null && cleared === null);
+check('and hands control back to the OS', t.scheme === 'dark', t.paper);
+
+await page.emulateMedia({ colorScheme: 'light' });
+await page.evaluate(() => localStorage.removeItem('navx-theme'));
+
+/* ── 11. no horizontal overflow at either end ───────────────────────────── */
 
 console.log('\nlayout');
 for (const width of [1280, 900, 560, 380]) {
